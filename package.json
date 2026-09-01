@@ -1,0 +1,43 @@
+{
+  "name": "sandbox-runtime-api",
+  "version": "0.1.0-dev.0",
+  "private": true,
+  "description": "A provider-neutral runtime contract for isolated AI agent execution environments.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/capa-cloud/sandbox-runtime-api#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/capa-cloud/sandbox-runtime-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/capa-cloud/sandbox-runtime-api/issues"
+  },
+  "keywords": [
+    "agent",
+    "sandbox",
+    "runtime",
+    "provider",
+    "conformance"
+  ],
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "sanitize": "bash scripts/scan-public.sh .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.tests.json --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.9",
+    "@types/node": "22.20.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}
