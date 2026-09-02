@@ -1,6 +1,6 @@
 {
   "name": "sandbox-runtime-api",
-  "version": "0.1.0-dev.0",
+  "version": "0.1.0",
   "private": true,
   "description": "A provider-neutral runtime contract for isolated AI agent execution environments.",
   "license": "Apache-2.0",
@@ -20,24 +20,46 @@
     "conformance"
   ],
   "type": "module",
+  "bin": {
+    "sandbox-runtime": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "spec/openapi.yaml"
+  ],
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm build && pnpm test:coverage && pnpm pack:check",
+    "docs:check": "node scripts/check-docs.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
+    "pack:check": "pnpm build && pnpm pack --dry-run",
     "sanitize": "bash scripts/scan-public.sh .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.tests.json --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.9",
+    "@biomejs/biome": "2.5.11",
     "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.11",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "yaml": "2.9.0"
   }
 }

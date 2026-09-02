@@ -6,6 +6,8 @@
 pnpm install
 pnpm check
 pnpm sanitize
+pnpm test:coverage
+pnpm pack:check
 ```
 
 Use Node.js 22 or later. Keep each change scoped to one protocol or provider concern and add tests

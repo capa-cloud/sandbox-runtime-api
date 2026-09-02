@@ -1,3 +1,12 @@
+---
+id: capabilities
+authority: canonical
+status: canonical
+title: Capability vocabulary
+genre: spec
+last_verified: 2026-09-02
+---
+
 # Capabilities
 
 Capabilities let a client reject an unsuitable provider before allocating resources.
@@ -15,6 +24,9 @@ Initial vocabulary:
 | `memorySnapshot` | Capture and restore process memory state |
 | `persistentVolume` | Attach storage whose lifetime is independent from one allocation |
 | `networkPolicy` | Enforce declared ingress or egress policy |
+| `imageReference` | Provision from a portable image reference |
+| `templateReference` | Provision from a Provider-defined reusable template reference |
+| `resourceLimits` | Enforce requested CPU, memory, and disk bounds |
 
 A `true` value means the provider implements the portable semantics and is expected to pass the
 matching conformance checks. It does not certify the isolation implementation or production SLO.

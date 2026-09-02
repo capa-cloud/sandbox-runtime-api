@@ -1,3 +1,12 @@
+---
+id: origin-and-provenance
+authority: canonical
+status: canonical
+title: Origin and provenance
+genre: spec
+last_verified: 2026-09-02
+---
+
 # Origin and Provenance
 
 Sandbox Runtime API is an independently designed public project.

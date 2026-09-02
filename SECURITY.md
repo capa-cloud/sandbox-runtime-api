@@ -1,3 +1,12 @@
+---
+id: security-policy
+authority: canonical
+status: canonical
+title: Security policy and deployment boundary
+genre: spec
+last_verified: 2026-09-02
+---
+
 # Security Policy
 
 ## Supported versions
@@ -21,3 +30,7 @@ The reference runtime and mock provider are development implementations. They do
 
 A production adapter must document its trust boundary, capability limitations, credential model,
 and isolation evidence. Passing portable conformance does not certify security.
+
+The Local Provider runs processes with the current OS user's permissions. Those processes may access
+the host filesystem, network, credentials, and services available to that user. Its file API path
+checks do not make command execution safe for untrusted input.

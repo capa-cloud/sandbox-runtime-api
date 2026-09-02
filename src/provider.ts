@@ -1,4 +1,15 @@
-import type { ProviderManifest, SandboxEndpoint, SandboxSpec, SandboxState } from './protocol.js'
+import type {
+  CommandRequest,
+  CommandResult,
+  FileEntry,
+  FileReadResult,
+  FileWriteRequest,
+  JsonObject,
+  ProviderManifest,
+  SandboxEndpoint,
+  SandboxSpec,
+  SandboxState,
+} from './protocol.js'
 
 export type ProviderContext = Readonly<{
   requestId: string
@@ -13,7 +24,7 @@ export type ProviderSandboxKey = Readonly<{
 export type ProviderObservation = Readonly<{
   state: SandboxState
   endpoint?: SandboxEndpoint
-  extensions?: Readonly<Record<string, unknown>>
+  extensions?: JsonObject
   failure?: Readonly<{
     code: string
     message: string
@@ -35,4 +46,24 @@ export interface SandboxProvider {
   terminate(key: ProviderSandboxKey, context: ProviderContext): Promise<ProviderObservation>
   pause?(key: ProviderSandboxKey, context: ProviderContext): Promise<ProviderObservation>
   resume?(key: ProviderSandboxKey, context: ProviderContext): Promise<ProviderObservation>
+  execute?(
+    key: ProviderSandboxKey,
+    request: CommandRequest,
+    context: ProviderContext,
+  ): Promise<CommandResult>
+  readFile?(
+    key: ProviderSandboxKey,
+    path: string,
+    context: ProviderContext,
+  ): Promise<FileReadResult>
+  writeFile?(
+    key: ProviderSandboxKey,
+    request: FileWriteRequest,
+    context: ProviderContext,
+  ): Promise<FileReadResult>
+  listFiles?(
+    key: ProviderSandboxKey,
+    path: string,
+    context: ProviderContext,
+  ): Promise<readonly FileEntry[]>
 }

@@ -1,3 +1,12 @@
+---
+id: clean-room-policy
+authority: reference
+status: canonical
+title: Clean-room development policy
+genre: how-to
+last_verified: 2026-09-02
+---
+
 # Clean-room Development Policy
 
 ## Purpose

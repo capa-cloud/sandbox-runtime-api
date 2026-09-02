@@ -1,3 +1,12 @@
+---
+id: non-goals
+authority: canonical
+status: canonical
+title: Project non-goals
+genre: spec
+last_verified: 2026-09-02
+---
+
 # Non-goals
 
 The project intentionally does not provide:
