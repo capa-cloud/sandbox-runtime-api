@@ -1,10 +1,13 @@
 # Sandbox Runtime API
 
+[![CI](https://github.com/capa-cloud/sandbox-runtime-api/actions/workflows/ci.yml/badge.svg)](https://github.com/capa-cloud/sandbox-runtime-api/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 <p align="center">
   <a href="README.md">English</a> | <strong>简体中文</strong>
 </p>
 
-Sandbox Runtime API 是一个独立设计、Provider 中立的公共契约，用于创建、观察、控制和删除
+Sandbox Runtime API `v0.1` 是一个独立设计、Provider 中立的公共契约，用于创建、观察、控制和删除
 面向 AI Agent 与开发工具的隔离执行环境。
 
 项目只标准化可移植的生命周期和能力语义。它不是托管 Sandbox 平台，不是 Agent 框架，也不是
@@ -29,7 +32,7 @@ Agent 应用通常需要相似的执行能力，但不同 Provider 对生命周�
           |
   +-------+--------+----------+
   |                |          |
-Local            Docker   Kubernetes / Cloud
+Local             Mock       Future custom
 Provider         Provider      Provider
           |
      sandbox agent
@@ -42,19 +45,21 @@ Harness 执行；Sandbox Runtime API 规范 Harness 或工具运行所需的隔�
 
 二者没有强制依赖。需要同时获得 Harness 与 Sandbox 可移植性时，可以组合使用。
 
-## 当前状态
+## v0.1 能力
 
-`0.1.0-dev` 是 clean-room 的开发基线，目前包含：
+`0.1.0` 包含：
 
-- 与传输无关的 TypeScript 协议模型；
+- 规范化 Runtime 模型、协议、能力词表与 OpenAPI；
 - capability preflight；
-- generation fencing；
-- 内存参考 Runtime；
-- Mock Provider；
+- 幂等生命周期、reconcile、generation fencing 与重建；
+- 有界命令执行和 Sandbox 相对路径文件操作；
+- 追加事件列表与 SSE 投影；
+- 内存 Runtime、TypeScript SDK、CLI 和 loopback 参考服务；
+- Mock Provider 与不提供安全隔离的 Local Provider；
 - Provider conformance runner；
 - 公开来源与 clean-room 贡献规则。
 
-协议在 `1.0.0` 前可能发生不兼容变化。
+协议在 `1.0.0` 前可能发生不兼容变化。Local Provider 不是安全 Sandbox，禁止执行不可信代码。
 
 ## 快速开始
 
@@ -63,7 +68,10 @@ Harness 执行；Sandbox Runtime API 规范 Harness 或工具运行所需的隔�
 ```bash
 pnpm install
 pnpm check
+pnpm build
 ```
+
+继续阅读 [快速开始](docs/quickstart.md) 或 [文档索引](DOCS-INDEX.md)。
 
 ## Clean-room 边界
 

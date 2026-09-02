@@ -1,3 +1,12 @@
+---
+id: runtime-model
+authority: canonical
+status: canonical
+title: Runtime model
+genre: spec
+last_verified: 2026-09-02
+---
+
 # Runtime Model
 
 ## Resource identity
@@ -36,7 +45,8 @@ portable guarantees.
 ## Idempotency
 
 `clientRequestId` identifies one create intent. Repeating the same create request returns the same
-logical sandbox. Reusing it with a different specification fails with `idempotency_conflict`.
+logical sandbox generation. Reusing it with a different specification, or replaying an older
+generation's key after recreation, fails with `idempotency_conflict`.
 
 ## Capability preflight
 

@@ -1,0 +1,43 @@
+name: Provider or protocol RFC
+description: Propose a public-source Provider adapter or a change to the portable contract.
+title: "rfc: "
+labels: [rfc]
+body:
+  - type: markdown
+    attributes:
+      value: Read ORIGIN_AND_PROVENANCE.md and docs/clean-room-policy.md before proposing a change.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Portable problem
+      description: Explain why this is shared semantics rather than one deployment detail.
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Public sources
+      description: Link public specifications, SDKs, or documentation. Do not cite private material.
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: Capability and conformance impact
+      description: Name capability changes, negative behavior, and tests required.
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security boundary
+      description: State what is and is not guaranteed.
+    validations:
+      required: true
+  - type: checkboxes
+    id: cleanroom
+    attributes:
+      label: Clean-room confirmation
+      options:
+        - label: This proposal is independently explainable from public sources or first principles.
+          required: true

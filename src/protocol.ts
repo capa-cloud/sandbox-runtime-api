@@ -12,6 +12,8 @@ export const sandboxStates = [
 
 export type SandboxState = (typeof sandboxStates)[number]
 
+export const protocolVersion = '0.1'
+
 export const capabilityNames = [
   'commandExecution',
   'fileAccess',
@@ -22,6 +24,9 @@ export const capabilityNames = [
   'memorySnapshot',
   'persistentVolume',
   'networkPolicy',
+  'imageReference',
+  'templateReference',
+  'resourceLimits',
 ] as const
 
 export type CapabilityName = (typeof capabilityNames)[number]
@@ -35,29 +40,70 @@ export type ProviderManifest = Readonly<{
   capabilities: RuntimeCapabilities
 }>
 
+export type RuntimeInfo = Readonly<{
+  protocolVersion: string
+  provider: ProviderManifest
+}>
+
 export type ResourceRequest = Readonly<{
   cpuMillis?: number
   memoryMiB?: number
   diskMiB?: number
 }>
 
-export type LifetimePolicy = Readonly<{
-  idleTimeoutSeconds?: number
-  maxLifetimeSeconds?: number
-}>
+export type JsonValue = string | number | boolean | null | readonly JsonValue[] | JsonObject
+
+export type JsonObject = Readonly<{ [key: string]: JsonValue }>
 
 export type SandboxSpec = Readonly<{
   clientRequestId: string
   image?: string
   template?: string
   resources?: ResourceRequest
-  lifetime?: LifetimePolicy
   requiredCapabilities?: readonly CapabilityName[]
-  extensions?: Readonly<Record<string, unknown>>
+  extensions?: JsonObject
 }>
 
 export type SandboxEndpoint = Readonly<{
   baseUrl: string
+}>
+
+export type CommandRequest = Readonly<{
+  expectedGeneration: number
+  argv: readonly string[]
+  cwd?: string
+  env?: Readonly<Record<string, string>>
+  timeoutSeconds?: number
+  maxOutputBytes?: number
+}>
+
+export type CommandResult = Readonly<{
+  exitCode: number | null
+  stdout: string
+  stderr: string
+  timedOut: boolean
+  cancelled: boolean
+  truncated: boolean
+  startedAt: string
+  finishedAt: string
+}>
+
+export type FileWriteRequest = Readonly<{
+  expectedGeneration: number
+  path: string
+  contentBase64: string
+}>
+
+export type FileReadResult = Readonly<{
+  path: string
+  contentBase64: string
+  size: number
+}>
+
+export type FileEntry = Readonly<{
+  path: string
+  kind: 'file' | 'directory'
+  size: number
 }>
 
 export type SandboxResource = Readonly<{
@@ -67,13 +113,31 @@ export type SandboxResource = Readonly<{
   spec: SandboxSpec
   provider: string
   endpoint?: SandboxEndpoint
-  providerExtensions?: Readonly<Record<string, unknown>>
+  providerExtensions?: JsonObject
   failure?: Readonly<{
     code: string
     message: string
   }>
   createdAt: string
   updatedAt: string
+}>
+
+export const sandboxEventTypes = [
+  'sandbox.created',
+  'sandbox.state_changed',
+  'sandbox.command_completed',
+  'sandbox.file_written',
+] as const
+
+export type SandboxEventType = (typeof sandboxEventTypes)[number]
+
+export type SandboxEvent = Readonly<{
+  cursor: number
+  type: SandboxEventType
+  sandboxId: string
+  generation: number
+  timestamp: string
+  data: JsonObject
 }>
 
 export const runtimeErrorCodes = [
@@ -84,6 +148,8 @@ export const runtimeErrorCodes = [
   'not_found',
   'invalid_state',
   'provider_unavailable',
+  'provider_protocol_error',
+  'event_history_unavailable',
 ] as const
 
 export type RuntimeErrorCode = (typeof runtimeErrorCodes)[number]

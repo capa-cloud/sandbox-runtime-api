@@ -1,3 +1,12 @@
+---
+id: provider-neutral-sandbox-runtime
+authority: canonical
+status: canonical
+title: Provider-neutral Sandbox Runtime
+genre: adr
+last_verified: 2026-09-02
+---
+
 # 0001: Provider-neutral Sandbox Runtime
 
 - Status: accepted for `0.1.0-dev`

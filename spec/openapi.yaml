@@ -1,0 +1,551 @@
+openapi: 3.1.0
+info:
+  title: Sandbox Runtime API
+  version: 0.1.0
+  description: Provider-neutral lifecycle and data-plane contract for isolated execution environments.
+servers:
+  - url: http://127.0.0.1:4311
+    description: Loopback reference server
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: Process is accepting requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { const: ok }
+  /v1/runtime:
+    get:
+      operationId: getRuntimeInfo
+      responses:
+        "200":
+          description: Protocol and Provider manifest
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RuntimeInfo" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes:
+    get:
+      operationId: listSandboxes
+      responses:
+        "200":
+          description: Current in-memory resources
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sandboxes]
+                properties:
+                  sandboxes:
+                    type: array
+                    items: { $ref: "#/components/schemas/SandboxResource" }
+    post:
+      operationId: createSandbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SandboxSpec" }
+      responses:
+        "201":
+          description: Created or idempotently returned Sandbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    get:
+      operationId: getSandbox
+      responses:
+        "200":
+          description: Sandbox resource
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/sandboxes/{sandboxId}/actions/reconcile:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    post:
+      operationId: reconcileSandbox
+      responses:
+        "200":
+          description: Reconciled Sandbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/actions/pause:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    post:
+      operationId: pauseSandbox
+      requestBody: { $ref: "#/components/requestBodies/ExpectedGeneration" }
+      responses:
+        "200":
+          description: Paused Sandbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/actions/resume:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    post:
+      operationId: resumeSandbox
+      requestBody: { $ref: "#/components/requestBodies/ExpectedGeneration" }
+      responses:
+        "200":
+          description: Ready Sandbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/actions/terminate:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    post:
+      operationId: terminateSandbox
+      requestBody: { $ref: "#/components/requestBodies/ExpectedGeneration" }
+      responses:
+        "200":
+          description: Terminated Sandbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/actions/recreate:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    post:
+      operationId: recreateSandbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedGeneration, spec]
+              properties:
+                expectedGeneration: { type: integer, minimum: 1 }
+                spec: { $ref: "#/components/schemas/SandboxSpec" }
+      responses:
+        "200":
+          description: Recreated Sandbox with incremented generation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SandboxResource" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/commands:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    post:
+      operationId: executeCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommandRequest" }
+      responses:
+        "200":
+          description: Terminal command result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/files/content:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    get:
+      operationId: readFile
+      parameters:
+        - in: query
+          name: path
+          required: true
+          schema: { type: string }
+        - in: query
+          name: expectedGeneration
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Base64 file content
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FileReadResult" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+    put:
+      operationId: writeFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FileWriteRequest" }
+      responses:
+        "200":
+          description: Written file descriptor
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FileReadResult" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/sandboxes/{sandboxId}/files/entries:
+    parameters:
+      - $ref: "#/components/parameters/SandboxId"
+    get:
+      operationId: listFiles
+      parameters:
+        - in: query
+          name: path
+          schema: { type: string, default: "." }
+        - in: query
+          name: expectedGeneration
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: One-directory listing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entries]
+                properties:
+                  entries:
+                    type: array
+                    items: { $ref: "#/components/schemas/FileEntry" }
+        "400": { $ref: "#/components/responses/InvalidRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unsupported" }
+        "502": { $ref: "#/components/responses/ProviderProtocolError" }
+        "503": { $ref: "#/components/responses/ProviderUnavailable" }
+  /v1/events:
+    get:
+      operationId: listEvents
+      parameters:
+        - $ref: "#/components/parameters/AfterCursor"
+        - $ref: "#/components/parameters/OptionalSandboxId"
+      responses:
+        "200":
+          description: Events after the cursor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [events]
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/SandboxEvent" }
+        "410": { $ref: "#/components/responses/EventHistoryUnavailable" }
+  /v1/events/stream:
+    get:
+      operationId: streamEvents
+      parameters:
+        - $ref: "#/components/parameters/AfterCursor"
+        - $ref: "#/components/parameters/OptionalSandboxId"
+      responses:
+        "200":
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "410": { $ref: "#/components/responses/EventHistoryUnavailable" }
+components:
+  parameters:
+    SandboxId:
+      in: path
+      name: sandboxId
+      required: true
+      schema: { type: string, minLength: 1 }
+    AfterCursor:
+      in: query
+      name: after
+      schema: { type: integer, minimum: 0, default: 0 }
+    OptionalSandboxId:
+      in: query
+      name: sandboxId
+      schema: { type: string }
+  requestBodies:
+    ExpectedGeneration:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [expectedGeneration]
+            properties:
+              expectedGeneration: { type: integer, minimum: 1 }
+  responses:
+    InvalidRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Conflict:
+      description: Idempotency, generation, or state conflict
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unsupported:
+      description: Provider does not support a required capability
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ProviderUnavailable:
+      description: Provider operation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ProviderProtocolError:
+      description: Provider returned a malformed manifest, observation, or result
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    EventHistoryUnavailable:
+      description: Requested event cursor is older than retained history
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+  schemas:
+    CapabilityName:
+      type: string
+      enum:
+        - commandExecution
+        - fileAccess
+        - interactiveTerminal
+        - portForwarding
+        - pauseResume
+        - filesystemSnapshot
+        - memorySnapshot
+        - persistentVolume
+        - networkPolicy
+        - imageReference
+        - templateReference
+        - resourceLimits
+    RuntimeCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+        - commandExecution
+        - fileAccess
+        - interactiveTerminal
+        - portForwarding
+        - pauseResume
+        - filesystemSnapshot
+        - memorySnapshot
+        - persistentVolume
+        - networkPolicy
+        - imageReference
+        - templateReference
+        - resourceLimits
+      properties:
+        commandExecution: { type: boolean }
+        fileAccess: { type: boolean }
+        interactiveTerminal: { type: boolean }
+        portForwarding: { type: boolean }
+        pauseResume: { type: boolean }
+        filesystemSnapshot: { type: boolean }
+        memorySnapshot: { type: boolean }
+        persistentVolume: { type: boolean }
+        networkPolicy: { type: boolean }
+        imageReference: { type: boolean }
+        templateReference: { type: boolean }
+        resourceLimits: { type: boolean }
+    ProviderManifest:
+      type: object
+      required: [name, version, runtimeClass, capabilities]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        runtimeClass: { type: string }
+        capabilities: { $ref: "#/components/schemas/RuntimeCapabilities" }
+    RuntimeInfo:
+      type: object
+      required: [protocolVersion, provider]
+      properties:
+        protocolVersion: { const: "0.1" }
+        provider: { $ref: "#/components/schemas/ProviderManifest" }
+    SandboxState:
+      type: string
+      enum: [requested, starting, ready, pausing, paused, resuming, terminating, terminated, failed]
+    SandboxSpec:
+      type: object
+      additionalProperties: false
+      not:
+        required: [image, template]
+      required: [clientRequestId]
+      properties:
+        clientRequestId: { type: string, minLength: 1, pattern: "\\S" }
+        image: { type: string, minLength: 1, pattern: "\\S" }
+        template: { type: string, minLength: 1, pattern: "\\S" }
+        resources:
+          type: object
+          additionalProperties: false
+          properties:
+            cpuMillis: { type: integer, minimum: 1 }
+            memoryMiB: { type: integer, minimum: 1 }
+            diskMiB: { type: integer, minimum: 1 }
+        requiredCapabilities:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/CapabilityName" }
+        extensions:
+          type: object
+          propertyNames:
+            pattern: "^[a-z][a-z0-9-]*\\.[A-Za-z][A-Za-z0-9_.-]*$"
+    SandboxResource:
+      type: object
+      required: [id, generation, state, spec, provider, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        generation: { type: integer, minimum: 1 }
+        state: { $ref: "#/components/schemas/SandboxState" }
+        spec: { $ref: "#/components/schemas/SandboxSpec" }
+        provider: { type: string }
+        endpoint:
+          type: object
+          required: [baseUrl]
+          properties:
+            baseUrl: { type: string, format: uri }
+        providerExtensions: { type: object }
+        failure:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CommandRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedGeneration, argv]
+      properties:
+        expectedGeneration: { type: integer, minimum: 1 }
+        argv:
+          type: array
+          minItems: 1
+          items: { type: string }
+        cwd: { type: string }
+        env:
+          type: object
+          additionalProperties: { type: string }
+        timeoutSeconds: { type: number, exclusiveMinimum: 0, maximum: 3600 }
+        maxOutputBytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+          description: Maximum retained bytes independently for stdout and stderr.
+    CommandResult:
+      type: object
+      required: [exitCode, stdout, stderr, timedOut, cancelled, truncated, startedAt, finishedAt]
+      properties:
+        exitCode: { type: [integer, "null"] }
+        stdout: { type: string }
+        stderr: { type: string }
+        timedOut: { type: boolean }
+        cancelled: { type: boolean }
+        truncated: { type: boolean }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+    FileWriteRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedGeneration, path, contentBase64]
+      properties:
+        expectedGeneration: { type: integer, minimum: 1 }
+        path: { type: string }
+        contentBase64: { type: string, contentEncoding: base64 }
+    FileReadResult:
+      type: object
+      required: [path, contentBase64, size]
+      properties:
+        path: { type: string }
+        contentBase64: { type: string, contentEncoding: base64 }
+        size: { type: integer, minimum: 0 }
+    FileEntry:
+      type: object
+      required: [path, kind, size]
+      properties:
+        path: { type: string }
+        kind: { enum: [file, directory] }
+        size: { type: integer, minimum: 0 }
+    SandboxEvent:
+      type: object
+      required: [cursor, type, sandboxId, generation, timestamp, data]
+      properties:
+        cursor: { type: integer, minimum: 1 }
+        type:
+          enum: [sandbox.created, sandbox.state_changed, sandbox.command_completed, sandbox.file_written]
+        sandboxId: { type: string }
+        generation: { type: integer, minimum: 1 }
+        timestamp: { type: string, format: date-time }
+        data: { type: object }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }

@@ -23,7 +23,7 @@ scan() {
   local pattern="$2"
   local output
   output=$(rg -n -i --hidden \
-    --glob '!.git/**' --glob '!node_modules/**' --glob '!dist/**' --glob '!pnpm-lock.yaml' \
+    --glob '!.git/**' --glob '!node_modules/**' --glob '!coverage/**' --glob '!pnpm-lock.yaml' \
     --glob '!scripts/scan-public.sh' \
     "$pattern" "$root" || true)
   if [[ -n "$output" ]]; then
@@ -36,5 +36,14 @@ scan 'credential-shaped content' \
   '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._-]{16,}|api[_-]?key[[:space:]]*[:=][[:space:]]*["'"'][^"'"']{12,}["'"'])'
 scan 'local absolute path or private-network literal' \
   '(/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$)|(^|[^0-9])(10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})([^0-9]|$))'
+
+if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  history=$(git -C "$root" log --all -p -- . ':!pnpm-lock.yaml' ':!scripts/scan-public.sh' | \
+    rg -n -i '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._-]{16,}|/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$))' || true)
+  if [[ -n "$history" ]]; then
+    printf 'sensitive-shaped git history content:\n%s\n' "$history"
+    status=1
+  fi
+fi
 
 exit "$status"

@@ -1,10 +1,13 @@
 # Sandbox Runtime API
 
+[![CI](https://github.com/capa-cloud/sandbox-runtime-api/actions/workflows/ci.yml/badge.svg)](https://github.com/capa-cloud/sandbox-runtime-api/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 <p align="center">
   <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
-Sandbox Runtime API is an independently designed, provider-neutral contract for creating,
+Sandbox Runtime API `v0.1` is an independently designed, provider-neutral contract for creating,
 observing, controlling, and deleting isolated execution environments for AI agents and developer
 tools.
 
@@ -31,7 +34,7 @@ Application or Harness Runtime
              |
     +--------+---------+----------+
     |                  |          |
-  Local              Docker   Kubernetes / Cloud
+  Local               Mock       Future custom
  Provider            Provider      Provider
              |
         sandbox agent
@@ -53,19 +56,22 @@ Application
 Neither API requires the other. An integration may use both when it needs portable harness and
 portable sandbox semantics.
 
-## Current Status
+## v0.1 Features
 
-Version `0.1.0-dev` is a clean-room, pre-release development baseline. It currently contains:
+Version `0.1.0` contains:
 
-- a transport-neutral TypeScript protocol model;
+- a normative runtime model, protocol, capability vocabulary, and OpenAPI document;
 - capability preflight;
-- generation-fenced mutation semantics;
-- an in-memory runtime;
-- a mock provider;
+- idempotent lifecycle, reconciliation, generation fencing, and recreation;
+- bounded command execution and sandbox-relative file operations;
+- append-only event listing and resumable SSE projection;
+- an in-memory runtime, TypeScript SDK, CLI, and loopback reference server;
+- Mock and unsafe Local Providers;
 - a provider conformance runner;
 - public-source provenance and clean-room contribution rules.
 
-The protocol is expected to change before `1.0.0`.
+The API remains pre-1.0 and may change incompatibly. The Local Provider is not a security sandbox and
+must never execute untrusted code.
 
 ## Quick Start
 
@@ -74,7 +80,11 @@ Requirements: Node.js 22 or later and pnpm 10.
 ```bash
 pnpm install
 pnpm check
+pnpm build
 ```
+
+Continue with the [Quickstart](docs/quickstart.md) or open the
+[documentation index](DOCS-INDEX.md).
 
 ## Repository Map
 
@@ -83,8 +93,10 @@ pnpm check
 | `src/protocol.ts` | Portable states, resources, capabilities, and errors |
 | `src/provider.ts` | Provider SPI |
 | `src/runtime.ts` | In-memory reference runtime |
+| `src/providers/local.ts` | Unsafe local-process development Provider |
 | `src/providers/mock.ts` | Deterministic development provider |
 | `src/conformance.ts` | Reusable provider checks |
+| `src/server.ts` / `src/sdk.ts` | HTTP/SSE reference server and TypeScript client |
 | `spec/` | Normative model and design decisions |
 | `docs/clean-room-policy.md` | Public-source and contribution boundary |
 

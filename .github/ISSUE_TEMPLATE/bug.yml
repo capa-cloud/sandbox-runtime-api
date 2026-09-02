@@ -1,0 +1,56 @@
+name: Bug report
+description: Report reproducible portable-runtime behavior that differs from the specification.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, private infrastructure, user data, or proprietary code.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0 or full commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Protocol or specification
+        - Reference runtime
+        - HTTP or SSE server
+        - TypeScript SDK
+        - Local Provider
+        - Mock Provider
+        - Conformance runner
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal public reproduction
+      description: Use synthetic identifiers and public inputs only.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety confirmation
+      options:
+        - label: This report contains no private code, endpoints, credentials, or user data.
+          required: true

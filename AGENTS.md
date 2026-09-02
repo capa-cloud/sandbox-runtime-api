@@ -7,6 +7,7 @@ provider SPI, mock adapter, SDK-facing types, and conformance checks.
 
 ## Read First
 
+- `DOCS-INDEX.md`
 - `README.md`
 - `docs/clean-room-policy.md`
 - `ORIGIN_AND_PROVENANCE.md`
@@ -19,6 +20,9 @@ provider SPI, mock adapter, SDK-facing types, and conformance checks.
 - Full check: `pnpm check`
 - Build: `pnpm build`
 - Tests: `pnpm test`
+- Coverage: `pnpm test:coverage`
+- Documentation: `pnpm docs:check`
+- Package contents: `pnpm pack:check`
 - Public-content scan: `pnpm sanitize`
 
 ## Contract Rules
