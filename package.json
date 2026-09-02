@@ -43,7 +43,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm build && pnpm test:coverage && pnpm pack:check",
     "docs:check": "node scripts/check-docs.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",

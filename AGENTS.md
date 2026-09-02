@@ -17,7 +17,7 @@ provider SPI, mock adapter, SDK-facing types, and conformance checks.
 ## Commands
 
 - Install: `pnpm install`
-- Full check: `pnpm check`
+- Full check (including build, coverage, docs, and package dry-run): `pnpm check`
 - Build: `pnpm build`
 - Tests: `pnpm test`
 - Coverage: `pnpm test:coverage`

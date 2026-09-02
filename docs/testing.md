@@ -20,8 +20,9 @@ pnpm test:coverage
 pnpm pack:check
 ```
 
-`pnpm check` runs formatting, lint, type checking, and the complete test suite. CI runs the same gates
-on Node.js 22 and 24, followed by the production dependency audit.
+`pnpm check` runs formatting, lint, type checking, the complete test suite, documentation validation,
+build, coverage thresholds, and package dry-run. CI runs the same gates on Node.js 22 and 24, followed
+by the public-content scan and production dependency audit.
 
 ## Test dimensions
 
