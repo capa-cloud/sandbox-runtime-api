@@ -4,7 +4,7 @@ authority: canonical
 status: canonical
 title: Runtime model
 genre: spec
-last_verified: 2026-09-02
+last_verified: 2026-09-03
 ---
 
 # Runtime Model
@@ -21,17 +21,14 @@ operations. A stale generation fails with `generation_conflict`.
 
 ## Lifecycle
 
-The portable development states are:
+The portable development states are shown below.
 
-```text
-requested -> starting -> ready
-                    \-> failed
+![Sandbox 生命周期与代际隔离：创建进入 ready，可暂停恢复；所有非终态可终止，重建产生下一代。](../docs/assets/lifecycle-state-machine.svg)
 
-ready -> pausing -> paused -> resuming -> ready
-
-requested | starting | ready | paused | failed
-    -> terminating -> terminated
-```
+Text equivalent: creation follows `requested -> starting -> ready`; pause and resume follow
+`ready -> pausing -> paused -> resuming -> ready`; Provider failures may enter `failed`. Any
+non-terminal operational state may enter `terminating -> terminated`. Only recreation moves a
+terminated logical resource to `requested` with `generation + 1`.
 
 Allocation and readiness are separate observations. A provider may allocate a resource before its
 execution agent or health endpoint is ready.

@@ -4,7 +4,7 @@ authority: reference
 status: active
 title: Local Provider boundary
 genre: primer
-last_verified: 2026-09-02
+last_verified: 2026-09-03
 ---
 
 # Local Provider
@@ -22,6 +22,13 @@ OS user and can access resources allowed to that user. Filesystem API paths are 
 working directory, but command arguments are not a kernel security boundary.
 
 Never run untrusted or AI-generated code with this Provider.
+
+![Local Provider 安全边界：文件 API 受资源目录限制，但命令进程仍拥有当前宿主用户权限。](../assets/local-provider-boundary.svg)
+
+Text equivalent: file API requests pass sandbox-relative path, real-path, symbolic-link, and size
+checks before reaching files inside one generation directory. Commands start with that directory as
+their working directory but remain ordinary host processes and may access anything available to the
+current OS user.
 
 ## Implemented capability
 

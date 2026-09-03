@@ -14,6 +14,12 @@ tools.
 The project standardizes portable lifecycle and capability semantics. It is not a hosted sandbox
 platform, an agent framework, or an open-source distribution of any private system.
 
+![统一 Sandbox 运行时：应用通过 SDK、HTTP/SSE 或 CLI 进入可移植核心，再由 Provider SPI 连接实现。](docs/assets/runtime-overview.png)
+
+The access methods converge on one portable runtime boundary. Provider implementations remain
+replaceable behind a single SPI; the dashed future Provider is a roadmap extension, not part of the
+v0.1 delivery.
+
 ## Why
 
 Agent applications need similar execution primitives but encounter provider-specific APIs for
@@ -26,19 +32,6 @@ This project separates those concerns into:
 - a deterministic mock provider;
 - provider conformance checks;
 - future transport mappings and client SDKs.
-
-```text
-Application or Harness Runtime
-             |
-     Sandbox Runtime API
-             |
-    +--------+---------+----------+
-    |                  |          |
-  Local               Mock       Future custom
- Provider            Provider      Provider
-             |
-        sandbox agent
-```
 
 ## Relationship to Harness Runtime API
 
