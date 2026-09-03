@@ -4,12 +4,18 @@ authority: canonical
 status: canonical
 title: Capability vocabulary
 genre: spec
-last_verified: 2026-09-02
+last_verified: 2026-09-03
 ---
 
 # Capabilities
 
 Capabilities let a client reject an unsuitable provider before allocating resources.
+
+![能力预检：客户端需求和 Provider Manifest 汇入 Runtime，支持则分配，不支持则在分配前失败。](../docs/assets/capability-preflight.png)
+
+Text equivalent: the runtime compares `requiredCapabilities` with the `Provider Manifest` before
+allocation. A supported request proceeds; an unsupported request returns
+`unsupported_capability` without allocating a resource.
 
 Initial vocabulary:
 

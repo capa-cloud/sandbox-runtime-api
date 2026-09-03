@@ -37,6 +37,17 @@ scan 'credential-shaped content' \
 scan 'local absolute path or private-network literal' \
   '(/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$)|(^|[^0-9])(10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})([^0-9]|$))'
 
+if [[ -d "$root/docs/assets" ]]; then
+  image_metadata=$(find "$root/docs/assets" -type f \( \
+    -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' \
+  \) -print0 | xargs -0 strings 2>/dev/null | \
+    rg -n -i '(trc_[a-z0-9]{16,}|atomic_[a-z0-9-]{16,}|/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+)' || true)
+  if [[ -n "$image_metadata" ]]; then
+    printf 'sensitive-shaped image metadata found\n'
+    status=1
+  fi
+fi
+
 if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   history=$(git -C "$root" log --all -p -- . ':!pnpm-lock.yaml' ':!scripts/scan-public.sh' | \
     rg -n -i '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._-]{16,}|/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$))' || true)

@@ -13,6 +13,11 @@ Sandbox Runtime API `v0.1` 是一个独立设计、Provider 中立的公共契�
 项目只标准化可移植的生命周期和能力语义。它不是托管 Sandbox 平台，不是 Agent 框架，也不是
 任何私有系统的开源发行版。
 
+![统一 Sandbox 运行时：应用通过 SDK、HTTP/SSE 或 CLI 进入可移植核心，再由 Provider SPI 连接实现。](docs/assets/runtime-overview.png)
+
+SDK、HTTP/SSE 和 CLI 最终汇入同一个可移植 Runtime；具体实现隐藏在唯一 Provider SPI 后面。
+虚线的未来 Provider 只是扩展方向，不属于 v0.1 已交付能力。
+
 ## 解决什么问题
 
 Agent 应用通常需要相似的执行能力，但不同 Provider 对生命周期、就绪、命令、文件、终端、
@@ -24,19 +29,6 @@ Agent 应用通常需要相似的执行能力，但不同 Provider 对生命周�
 - 确定性的 Mock Provider；
 - Provider 一致性测试；
 - 后续的传输协议映射和客户端 SDK。
-
-```text
-应用或 Harness Runtime
-          |
-  Sandbox Runtime API
-          |
-  +-------+--------+----------+
-  |                |          |
-Local             Mock       Future custom
-Provider         Provider      Provider
-          |
-     sandbox agent
-```
 
 ## 与 Harness Runtime API 的关系
 

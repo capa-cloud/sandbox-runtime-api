@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- add three validated AnyCap explanatory diagrams and two deterministic contract diagrams;
+- add text equivalents, visual provenance, integrity hashes, multi-size validation evidence, and
+  generated-image metadata scanning.
+
 ## 0.1.0 - 2026-09-02
 
 Initial public MVP:

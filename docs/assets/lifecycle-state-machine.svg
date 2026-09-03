@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Sandbox 生命周期与代际隔离</title>
+  <desc id="desc">主路径从 requested 到 ready，可暂停和恢复；非终态可终止；terminated 仅能通过 recreate 进入下一代 requested。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+    <marker id="blue-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563EB"/>
+    </marker>
+    <style>
+      text { font-family: Inter, "PingFang SC", "Noto Sans CJK SC", sans-serif; fill: #111827; }
+      .node { fill: #FFFFFF; stroke: #64748B; stroke-width: 2; rx: 12; }
+      .active { fill: #EFF6FF; stroke: #2563EB; stroke-width: 2.5; rx: 12; }
+      .terminal { fill: #F8FAFC; stroke: #334155; stroke-width: 2.5; rx: 12; }
+      .risk { fill: #FFF7ED; stroke: #D97706; stroke-width: 2; rx: 12; }
+      .edge { fill: none; stroke: #64748B; stroke-width: 2.5; }
+      .blue-edge { fill: none; stroke: #2563EB; stroke-width: 2.5; }
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="#FCFCFB"/>
+  <text x="80" y="72" font-size="38" font-weight="700">Sandbox 生命周期与 generation fencing</text>
+  <text x="80" y="112" font-size="18" fill="#475569">状态属于逻辑 Sandbox；generation 标识一次具体实例</text>
+
+  <text x="80" y="174" font-size="20" font-weight="650" fill="#475569">创建与运行</text>
+  <rect class="node" x="80" y="210" width="180" height="72"/>
+  <text x="170" y="255" text-anchor="middle" font-size="22" font-weight="650">requested</text>
+  <rect class="node" x="310" y="210" width="180" height="72"/>
+  <text x="400" y="255" text-anchor="middle" font-size="22" font-weight="650">starting</text>
+  <rect class="active" x="540" y="210" width="180" height="72"/>
+  <text x="630" y="255" text-anchor="middle" font-size="22" font-weight="700">ready</text>
+  <path class="edge" d="M260 246 H310"/>
+  <path d="M310 246 L298 238 L298 254 Z" fill="#64748B"/>
+  <path class="edge" d="M490 246 H540"/>
+  <path d="M540 246 L528 238 L528 254 Z" fill="#64748B"/>
+
+  <text x="780" y="174" font-size="20" font-weight="650" fill="#475569">暂停与恢复</text>
+  <rect class="node" x="770" y="210" width="180" height="72"/>
+  <text x="860" y="255" text-anchor="middle" font-size="22" font-weight="650">pausing</text>
+  <rect class="node" x="1000" y="210" width="180" height="72"/>
+  <text x="1090" y="255" text-anchor="middle" font-size="22" font-weight="650">paused</text>
+  <rect class="node" x="1230" y="210" width="180" height="72"/>
+  <text x="1320" y="255" text-anchor="middle" font-size="22" font-weight="650">resuming</text>
+  <path class="blue-edge" d="M720 246 H770"/>
+  <path d="M770 246 L758 238 L758 254 Z" fill="#2563EB"/>
+  <path class="blue-edge" d="M950 246 H1000"/>
+  <path d="M1000 246 L988 238 L988 254 Z" fill="#2563EB"/>
+  <path class="blue-edge" d="M1180 246 H1230"/>
+  <path d="M1230 246 L1218 238 L1218 254 Z" fill="#2563EB"/>
+  <path class="blue-edge" d="M1320 282 V390 H630 V282"/>
+  <path d="M630 282 L622 296 L638 296 Z" fill="#2563EB"/>
+  <text x="970" y="424" text-anchor="middle" font-size="17" fill="#2563EB">恢复后回到 ready</text>
+
+  <rect class="risk" x="310" y="470" width="180" height="72"/>
+  <text x="400" y="515" text-anchor="middle" font-size="22" font-weight="650">failed</text>
+  <path class="edge" d="M400 282 V470"/>
+  <path d="M400 470 L392 456 L408 456 Z" fill="#64748B"/>
+  <text x="420" y="386" font-size="16" fill="#D97706">Provider 错误</text>
+
+  <rect x="80" y="650" width="690" height="132" rx="16" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="112" y="694" font-size="20" font-weight="700">可终止来源</text>
+  <text x="112" y="734" font-size="18" fill="#475569">requested · starting · ready · pausing · paused · resuming · failed</text>
+  <text x="112" y="766" font-size="16" fill="#64748B">终止请求保持当前 generation</text>
+  <rect class="node" x="850" y="680" width="210" height="72"/>
+  <text x="955" y="725" text-anchor="middle" font-size="22" font-weight="650">terminating</text>
+  <rect class="terminal" x="1140" y="680" width="210" height="72"/>
+  <text x="1245" y="725" text-anchor="middle" font-size="22" font-weight="700">terminated</text>
+  <path class="edge" d="M770 716 H850"/>
+  <path d="M850 716 L838 708 L838 724 Z" fill="#64748B"/>
+  <path class="edge" d="M1060 716 H1140"/>
+  <path d="M1140 716 L1128 708 L1128 724 Z" fill="#64748B"/>
+
+  <path d="M1350 716 H1510 V140 H170 V210" fill="none" stroke="#D97706" stroke-width="2.5" stroke-dasharray="9 8"/>
+  <path d="M170 210 L162 196 L178 196 Z" fill="#D97706"/>
+  <text x="1040" y="132" text-anchor="middle" font-size="17" fill="#D97706">recreate · generation + 1</text>
+  <text x="80" y="850" font-size="17" fill="#475569">不变量：旧 generation 的生命周期、命令与文件请求不能作用于新实例。</text>
+</svg>

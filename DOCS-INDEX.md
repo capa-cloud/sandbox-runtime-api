@@ -4,7 +4,7 @@ authority: canonical
 status: canonical
 title: Sandbox Runtime API documentation index
 genre: spec
-last_verified: 2026-09-02
+last_verified: 2026-09-03
 ---
 
 # Documentation Index
@@ -36,6 +36,7 @@ network policy enforcement, snapshots, PTY, and port forwarding remain outside t
 - [Local Provider](docs/providers/local.md)
 - [Testing and conformance](docs/testing.md)
 - [Clean-room policy](docs/clean-room-policy.md)
+- [Visual source and validation register](docs/visuals/README.md)
 
 ## Process and release evidence
 
