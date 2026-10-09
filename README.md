@@ -31,7 +31,7 @@ This project separates those concerns into:
 - an embeddable in-memory reference runtime;
 - a deterministic mock provider;
 - provider conformance checks;
-- future transport mappings and client SDKs.
+- HTTP/SSE mappings, a TypeScript client SDK, and a development CLI.
 
 ## Relationship to Harness Runtime API
 
@@ -68,7 +68,7 @@ must never execute untrusted code.
 
 ## Quick Start
 
-Requirements: Node.js 22 or later and pnpm 10.
+Development requirements: Node.js 22.12+ (22.x) or 24.x and pnpm 10. CI verifies both lines.
 
 ```bash
 pnpm install

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ProviderObservation, SandboxProvider } from './provider.js'
+import type { ProviderContext, SandboxProvider } from './provider.js'
 import {
   capabilityNames,
   type CommandRequest,
@@ -16,6 +16,8 @@ export type ConformanceResult = Readonly<{
 }>
 
 export type ProviderConformanceOptions = Readonly<{
+  operationTimeoutMs?: number
+  cleanupTimeoutMs?: number
   readinessTimeoutMs?: number
   pollIntervalMs?: number
   commandRequest?: Omit<CommandRequest, 'expectedGeneration'>
@@ -73,23 +75,23 @@ const validFileEntry = (entry: FileEntry): boolean =>
       entry.size >= 0,
   )
 
-const observeBefore = async (
-  provider: SandboxProvider,
-  key: Readonly<{ sandboxId: string; generation: number }>,
+const callBefore = async <T>(
+  operation: (context: ProviderContext) => Promise<T>,
   requestId: string,
   deadline: number,
-): Promise<ProviderObservation> => {
+  timeoutMessage: string,
+): Promise<T> => {
   const remainingMs = deadline - Date.now()
-  if (remainingMs <= 0) throw new Error('readiness observation timed out')
+  if (remainingMs <= 0) throw new Error(timeoutMessage)
   const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
-      provider.observe(key, { requestId, signal: controller.signal }),
+      Promise.resolve().then(() => operation({ requestId, signal: controller.signal })),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(() => {
+          reject(new Error(timeoutMessage))
           controller.abort()
-          reject(new Error('readiness observation timed out'))
         }, remainingMs)
       }),
     ])
@@ -106,156 +108,209 @@ export const runProviderConformance = async (
   const context = { requestId: `conformance-${runId}` }
   const key = { sandboxId: `conformance-${runId}`, generation: 1 }
   const results: ConformanceResult[] = []
-  const readinessTimeoutMs = Math.max(1, options.readinessTimeoutMs ?? 5_000)
-  const pollIntervalMs = Math.max(1, options.pollIntervalMs ?? 25)
+  const operationTimeoutMs = options.operationTimeoutMs ?? 5_000
+  const cleanupTimeoutMs = options.cleanupTimeoutMs ?? 5_000
+  const readinessTimeoutMs = options.readinessTimeoutMs ?? 5_000
+  const pollIntervalMs = options.pollIntervalMs ?? 25
+  for (const [name, value] of Object.entries({
+    operationTimeoutMs,
+    cleanupTimeoutMs,
+    readinessTimeoutMs,
+    pollIntervalMs,
+  })) {
+    if (!Number.isInteger(value) || value <= 0 || value > 2 ** 31 - 1) {
+      return [
+        failure(
+          'conformance options are valid',
+          new Error(`${name} must be an integer between 1 and 2147483647`),
+        ),
+      ]
+    }
+  }
+  const call = <T>(
+    name: string,
+    operation: (ctx: ProviderContext) => Promise<T>,
+    timeoutMs = operationTimeoutMs,
+  ): Promise<T> =>
+    callBefore(operation, context.requestId, Date.now() + timeoutMs, `${name} timed out`)
 
   let manifest: ProviderManifest
   try {
-    manifest = await provider.describe(context)
+    manifest = await call('describe', (ctx) => provider.describe(ctx))
   } catch (error) {
     return [failure('provider manifest is readable', error)]
   }
   results.push({ name: 'provider manifest is complete', passed: validManifest(manifest) })
   if (!validManifest(manifest)) return results
 
-  let provisioned: ProviderObservation
+  let cleanupName = 'terminate reaches terminated'
   try {
-    provisioned = await provider.provision(
-      { ...key, spec: { clientRequestId: 'conformance-create' } },
-      context,
-    )
-    results.push({
-      name: 'provision returns an observable non-terminal state',
-      passed: !['failed', 'terminated'].includes(provisioned.state),
-      ...(['failed', 'terminated'].includes(provisioned.state)
-        ? { detail: `observed ${provisioned.state}` }
-        : {}),
-    })
-  } catch (error) {
-    results.push(failure('provision returns an observation', error))
     try {
-      await provider.terminate(key, context)
-      results.push({ name: 'ambiguous provision failure is cleaned up', passed: true })
-    } catch (cleanupError) {
-      results.push(failure('ambiguous provision failure is cleaned up', cleanupError))
-    }
-    return results
-  }
-
-  let ready = false
-  try {
-    const deadline = Date.now() + readinessTimeoutMs
-    let observed = await observeBefore(provider, key, context.requestId, deadline)
-    while (!['ready', 'failed', 'terminated'].includes(observed.state) && Date.now() < deadline) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.min(pollIntervalMs, Math.max(0, deadline - Date.now()))),
+      const provisioned = await call('provision', (ctx) =>
+        provider.provision(
+          { ...key, spec: { clientRequestId: `conformance-create-${runId}` } },
+          ctx,
+        ),
       )
-      observed = await observeBefore(provider, key, context.requestId, deadline)
-    }
-    ready = observed.state === 'ready'
-    results.push({
-      name: 'provision reaches ready within the bounded deadline',
-      passed: ready,
-      ...(!ready ? { detail: `last observed state ${observed.state}` } : {}),
-    })
-  } catch (error) {
-    results.push(failure('provision reaches ready within the bounded deadline', error))
-  }
-
-  if (ready && manifest.capabilities.pauseResume) {
-    if (!provider.pause || !provider.resume) {
+      const valid = Boolean(
+        provisioned && ['requested', 'starting', 'ready'].includes(provisioned.state),
+      )
       results.push({
-        name: 'pauseResume capability has SPI methods',
-        passed: false,
-        detail: 'manifest declares pauseResume without pause and resume methods',
+        name: 'provision returns an observable non-terminal state',
+        passed: valid,
+        ...(!valid ? { detail: `observed ${provisioned?.state ?? 'missing state'}` } : {}),
       })
-    } else {
-      try {
-        const paused = await provider.pause(key, context)
-        results.push({ name: 'pause reaches paused', passed: paused.state === 'paused' })
-        const resumed = await provider.resume(key, context)
-        results.push({ name: 'resume leaves paused', passed: resumed.state !== 'paused' })
-      } catch (error) {
-        results.push(failure('pause and resume complete', error))
-      }
+      if (!valid) return results
+    } catch (error) {
+      results.push(failure('provision returns an observation', error))
+      cleanupName = 'ambiguous provision failure is cleaned up'
+      return results
     }
-  }
 
-  if (ready && manifest.capabilities.commandExecution) {
-    if (!provider.execute) {
-      results.push({ name: 'commandExecution capability has an execute method', passed: false })
-    } else if (!options.commandRequest) {
-      results.push({
-        name: 'command execution probe is configured',
-        passed: false,
-        detail: 'commandRequest is required because no command is portable across providers',
-      })
-    } else {
-      try {
-        const command = await provider.execute(
-          key,
-          { ...options.commandRequest, expectedGeneration: key.generation },
-          context,
+    let ready = false
+    try {
+      const deadline = Date.now() + readinessTimeoutMs
+      const observe = () =>
+        callBefore(
+          (ctx) => provider.observe(key, ctx),
+          context.requestId,
+          deadline,
+          'readiness observation timed out',
         )
+      let observed = await observe()
+      while (!['ready', 'failed', 'terminated'].includes(observed.state) && Date.now() < deadline) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.min(pollIntervalMs, Math.max(0, deadline - Date.now()))),
+        )
+        observed = await observe()
+      }
+      ready = observed.state === 'ready'
+      results.push({
+        name: 'provision reaches ready within the bounded deadline',
+        passed: ready,
+        ...(!ready ? { detail: `last observed state ${observed.state}` } : {}),
+      })
+    } catch (error) {
+      results.push(failure('provision reaches ready within the bounded deadline', error))
+    }
+
+    if (ready && manifest.capabilities.pauseResume) {
+      if (!provider.pause || !provider.resume) {
         results.push({
-          name: 'command execution returns a complete successful result',
-          passed:
-            validCommandResult(command) &&
-            command.exitCode === 0 &&
-            !command.timedOut &&
-            !command.cancelled,
+          name: 'pauseResume capability has SPI methods',
+          passed: false,
+          detail: 'manifest declares pauseResume without pause and resume methods',
         })
-      } catch (error) {
-        results.push(failure('command execution completes', error))
+      } else {
+        try {
+          ready = false
+          const pause = provider.pause
+          const resume = provider.resume
+          const paused = await call('pause', (ctx) => pause.call(provider, key, ctx))
+          results.push({ name: 'pause reaches paused', passed: paused.state === 'paused' })
+          if (paused.state === 'paused') {
+            const resumed = await call('resume', (ctx) => resume.call(provider, key, ctx))
+            ready = resumed.state === 'ready'
+            results.push({ name: 'resume leaves paused', passed: ready })
+          }
+        } catch (error) {
+          results.push(failure('pause and resume complete', error))
+        }
       }
     }
-  }
 
-  if (ready && manifest.capabilities.fileAccess) {
-    if (!provider.writeFile || !provider.readFile || !provider.listFiles) {
-      results.push({
-        name: 'fileAccess capability has read, write, and list methods',
-        passed: false,
-      })
-    } else {
-      try {
-        const contentBase64 = Buffer.from('conformance').toString('base64')
-        const expectedSize = Buffer.byteLength('conformance')
-        const written = await provider.writeFile(
-          key,
-          { expectedGeneration: key.generation, path: 'probe.txt', contentBase64 },
-          context,
-        )
-        const read = await provider.readFile(key, 'probe.txt', context)
-        const listed = await provider.listFiles(key, '.', context)
+    if (ready && manifest.capabilities.commandExecution) {
+      if (!provider.execute) {
+        results.push({ name: 'commandExecution capability has an execute method', passed: false })
+      } else if (!options.commandRequest) {
         results.push({
-          name: 'file round-trip returns complete metadata, bytes, and listing',
-          passed:
-            validFileResult(written, 'probe.txt', expectedSize) &&
-            written.contentBase64 === contentBase64 &&
-            validFileResult(read, 'probe.txt', expectedSize) &&
-            read.contentBase64 === contentBase64 &&
-            listed.every(validFileEntry) &&
-            listed.some(
-              (entry) =>
-                entry.path === 'probe.txt' && entry.kind === 'file' && entry.size === expectedSize,
+          name: 'command execution probe is configured',
+          passed: false,
+          detail: 'commandRequest is required because no command is portable across providers',
+        })
+      } else {
+        try {
+          const execute = provider.execute
+          const commandRequest = options.commandRequest
+          const command = await call('execute', (ctx) =>
+            execute.call(
+              provider,
+              key,
+              { ...commandRequest, expectedGeneration: key.generation },
+              ctx,
             ),
-        })
-      } catch (error) {
-        results.push(failure('file round-trip completes', error))
+          )
+          results.push({
+            name: 'command execution returns a complete successful result',
+            passed:
+              validCommandResult(command) &&
+              command.exitCode === 0 &&
+              !command.timedOut &&
+              !command.cancelled,
+          })
+        } catch (error) {
+          results.push(failure('command execution completes', error))
+        }
       }
     }
-  }
 
-  try {
-    const terminated = await provider.terminate(key, context)
-    results.push({
-      name: 'terminate reaches terminated',
-      passed: terminated.state === 'terminated',
-    })
-  } catch (error) {
-    results.push(failure('terminate completes', error))
-  }
+    if (ready && manifest.capabilities.fileAccess) {
+      if (!provider.writeFile || !provider.readFile || !provider.listFiles) {
+        results.push({
+          name: 'fileAccess capability has read, write, and list methods',
+          passed: false,
+        })
+      } else {
+        try {
+          const contentBase64 = Buffer.from('conformance').toString('base64')
+          const expectedSize = Buffer.byteLength('conformance')
+          const writeFile = provider.writeFile
+          const readFile = provider.readFile
+          const listFiles = provider.listFiles
+          const written = await call('writeFile', (ctx) =>
+            writeFile.call(
+              provider,
+              key,
+              { expectedGeneration: key.generation, path: 'probe.txt', contentBase64 },
+              ctx,
+            ),
+          )
+          const read = await call('readFile', (ctx) =>
+            readFile.call(provider, key, 'probe.txt', ctx),
+          )
+          const listed = await call('listFiles', (ctx) => listFiles.call(provider, key, '.', ctx))
+          results.push({
+            name: 'file round-trip returns complete metadata, bytes, and listing',
+            passed:
+              validFileResult(written, 'probe.txt', expectedSize) &&
+              written.contentBase64 === contentBase64 &&
+              validFileResult(read, 'probe.txt', expectedSize) &&
+              read.contentBase64 === contentBase64 &&
+              listed.every(validFileEntry) &&
+              listed.some(
+                (entry) =>
+                  entry.path === 'probe.txt' &&
+                  entry.kind === 'file' &&
+                  entry.size === expectedSize,
+              ),
+          })
+        } catch (error) {
+          results.push(failure('file round-trip completes', error))
+        }
+      }
+    }
 
-  return results
+    return results
+  } finally {
+    try {
+      const terminated = await call(
+        'terminate',
+        (ctx) => provider.terminate(key, ctx),
+        cleanupTimeoutMs,
+      )
+      results.push({ name: cleanupName, passed: terminated?.state === 'terminated' })
+    } catch (error) {
+      results.push(failure(cleanupName, error))
+    }
+  }
 }

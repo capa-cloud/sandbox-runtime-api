@@ -28,7 +28,7 @@ Agent 应用通常需要相似的执行能力，但不同 Provider 对生命周�
 - 可嵌入的内存参考 Runtime；
 - 确定性的 Mock Provider；
 - Provider 一致性测试；
-- 后续的传输协议映射和客户端 SDK。
+- 已提供的 HTTP/SSE 映射、TypeScript 客户端 SDK 和开发 CLI。
 
 ## 与 Harness Runtime API 的关系
 
@@ -55,7 +55,7 @@ Harness 执行；Sandbox Runtime API 规范 Harness 或工具运行所需的隔�
 
 ## 快速开始
 
-需要 Node.js 22+ 和 pnpm 10。
+开发环境要求 Node.js 22.12+（22.x）或 24.x，pnpm 10。CI 验证这两个版本线。
 
 ```bash
 pnpm install

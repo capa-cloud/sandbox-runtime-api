@@ -227,7 +227,7 @@ export class InMemorySandboxRuntime {
       const current = this.get(id)
       this.#assertGeneration(current, expectedGeneration)
       if (current.state === 'terminated') return current
-      if (!['requested', 'starting', 'ready', 'paused', 'failed'].includes(current.state)) {
+      if (!transitions[current.state].includes('terminating')) {
         throw new RuntimeError(
           'invalid_state',
           `sandbox ${id} cannot terminate from ${current.state}`,

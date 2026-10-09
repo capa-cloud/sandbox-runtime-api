@@ -187,6 +187,71 @@ describe('InMemorySandboxRuntime lifecycle', () => {
     expect(terminations).toBe(1)
   })
 
+  it.each(['pausing', 'resuming'] as const)(
+    'terminates from %s after a lost response while fencing stale generations',
+    async (state) => {
+      const base = new MockSandboxProvider()
+      let terminations = 0
+      const provider: SandboxProvider = {
+        describe: (ctx) => base.describe(ctx),
+        provision: (request, ctx) => base.provision(request, ctx),
+        observe: (key, ctx) => base.observe(key, ctx),
+        terminate: (key, ctx) => {
+          terminations += 1
+          return base.terminate(key, ctx)
+        },
+        pause: async (key, ctx) => {
+          const observation = await base.pause(key, ctx)
+          if (state === 'pausing') throw new Error('pause response lost')
+          return observation
+        },
+        resume: async (key, ctx) => {
+          await base.resume(key, ctx)
+          throw new Error('resume response lost')
+        },
+      }
+      const runtime = new InMemorySandboxRuntime(provider, { idFactory: () => 'sandbox-1' })
+      await runtime.create({ clientRequestId: 'transition-cleanup' }, context)
+      if (state === 'resuming') await runtime.pause('sandbox-1', 1, context)
+      const transition = state === 'pausing' ? 'pause' : 'resume'
+      await expect(runtime[transition]('sandbox-1', 1, context)).rejects.toMatchObject({
+        code: 'provider_unavailable',
+      })
+      expect(runtime.get('sandbox-1').state).toBe(state)
+      await expect(runtime.terminate('sandbox-1', 2, context)).rejects.toMatchObject({
+        code: 'generation_conflict',
+      })
+      expect(terminations).toBe(0)
+      const resources = await Promise.all([
+        runtime.terminate('sandbox-1', 1, context),
+        runtime.terminate('sandbox-1', 1, context),
+      ])
+      expect(resources.every((resource) => resource.state === 'terminated')).toBe(true)
+      expect(terminations).toBe(1)
+    },
+  )
+
+  it('retries termination while the provider still reports terminating', async () => {
+    const base = new MockSandboxProvider()
+    let terminations = 0
+    const provider: SandboxProvider = {
+      describe: (ctx) => base.describe(ctx),
+      provision: (request, ctx) => base.provision(request, ctx),
+      observe: (key, ctx) => base.observe(key, ctx),
+      terminate: (key, ctx) => {
+        terminations += 1
+        return terminations === 1
+          ? Promise.resolve({ state: 'terminating' })
+          : base.terminate(key, ctx)
+      },
+    }
+    const runtime = new InMemorySandboxRuntime(provider, { idFactory: () => 'sandbox-1' })
+    await runtime.create({ clientRequestId: 'termination-retry' }, context)
+    expect((await runtime.terminate('sandbox-1', 1, context)).state).toBe('terminating')
+    expect((await runtime.terminate('sandbox-1', 1, context)).state).toBe('terminated')
+    expect(terminations).toBe(2)
+  })
+
   it('reconciles ambiguous pause and resume failures from transitional state', async () => {
     const base = new MockSandboxProvider()
     const provider: SandboxProvider = {
@@ -468,10 +533,12 @@ describe('provider conformance', () => {
   it('isolates concurrent conformance runs with unique resource identities', async () => {
     const base = new MockSandboxProvider()
     const sandboxIds: string[] = []
+    const createIntents: string[] = []
     const provider: SandboxProvider = {
       describe: (ctx) => base.describe(ctx),
       provision: async (request, ctx) => {
         sandboxIds.push(request.sandboxId)
+        createIntents.push(request.spec.clientRequestId)
         await Promise.resolve()
         return base.provision(request, ctx)
       },
@@ -489,6 +556,7 @@ describe('provider conformance', () => {
       runProviderConformance(provider, { commandRequest: { argv: ['second'] } }),
     ])
     expect(new Set(sandboxIds).size).toBe(2)
+    expect(new Set(createIntents).size).toBe(2)
     expect(runs.flat().filter((result) => !result.passed)).toEqual([])
   })
 

@@ -10,7 +10,8 @@ pnpm test:coverage
 pnpm pack:check
 ```
 
-Use Node.js 22 or later. Keep each change scoped to one protocol or provider concern and add tests
+Use Node.js 22.12+ (22.x) or 24.x for development. Keep each change scoped to one protocol or provider
+concern and add tests
 for observable behavior.
 
 ## Contract changes
