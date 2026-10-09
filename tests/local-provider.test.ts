@@ -12,8 +12,9 @@ const providers: LocalSandboxProvider[] = []
 const roots: string[] = []
 const context = { requestId: 'local-test' }
 
-const makeProvider = (): LocalSandboxProvider => {
-  const result = new LocalSandboxProvider({ defaultTimeoutSeconds: 1 })
+const makeProvider = (defaultTimeoutSeconds = 5): LocalSandboxProvider => {
+  // Successful commands need startup headroom under coverage; deadline tests set their own limit.
+  const result = new LocalSandboxProvider({ defaultTimeoutSeconds })
   providers.push(result)
   return result
 }
@@ -36,9 +37,22 @@ describe('LocalSandboxProvider', () => {
       },
       context,
     )
-    expect(result.exitCode).toBe(0)
+    expect(result).toMatchObject({ exitCode: 0, timedOut: false, cancelled: false })
     expect(result.stdout.endsWith('|ok')).toBe(true)
     expect(result.timedOut).toBe(false)
+  })
+
+  it('applies the configured default command deadline without a request override', async () => {
+    const runtime = new InMemorySandboxRuntime(makeProvider(0.02), {
+      idFactory: () => 'sandbox-1',
+    })
+    await runtime.create({ clientRequestId: 'create-1' }, context)
+    const result = await runtime.execute(
+      'sandbox-1',
+      { expectedGeneration: 1, argv: [process.execPath, '-e', 'setTimeout(()=>{}, 10000)'] },
+      context,
+    )
+    expect(result).toMatchObject({ exitCode: null, timedOut: true, cancelled: false })
   })
 
   it('captures stderr, bounds output, and terminates timed-out commands', async () => {
