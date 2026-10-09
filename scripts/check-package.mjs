@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,8 +43,47 @@ try {
     }
   }
   if (missing.length) throw new Error(`package validation failed:\n${missing.join('\n')}`)
+  const consumer = join(temporary, 'consumer')
+  await mkdir(consumer)
+  execFileSync(
+    'npm',
+    ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', archive],
+    {
+      cwd: consumer,
+      stdio: 'pipe',
+      timeout: 60_000,
+    },
+  )
+  const example = join(consumer, 'embedded-runtime.mts')
+  await writeFile(example, read('package/examples/embedded-runtime.mts'))
+  execFileSync(
+    process.execPath,
+    [
+      join(root, 'node_modules/typescript/bin/tsc'),
+      '--module',
+      'NodeNext',
+      '--target',
+      'ES2022',
+      '--strict',
+      '--outDir',
+      consumer,
+      example,
+    ],
+    { cwd: consumer, stdio: 'pipe', timeout: 30_000 },
+  )
+  execFileSync(process.execPath, [join(consumer, 'embedded-runtime.mjs')], {
+    cwd: consumer,
+    stdio: 'pipe',
+    timeout: 10_000,
+  })
+  const smoke = await readFile(join(root, 'scripts/package-smoke.mjs'), 'utf8')
+  execFileSync(process.execPath, ['--input-type=module', '--eval', smoke], {
+    cwd: consumer,
+    stdio: 'pipe',
+    timeout: 20_000,
+  })
   process.stdout.write(
-    `package validation passed: ${files.size} entries, exports, CLI, docs, and local links\n`,
+    `package validation passed: ${files.size} entries; local links, installed types/example, SDK, CLI, SSE, and shutdown\n`,
   )
 } finally {
   await rm(temporary, { recursive: true, force: true })

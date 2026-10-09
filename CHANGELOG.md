@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+No changes queued.
+
+## 0.1.1 - 2026-10-09
+
+- protect the reference HTTP server with authority/origin/fetch-metadata checks, JSON media-type
+  enforcement, strict action/file routes, and portable malformed-path errors;
+- reject special filesystem write/list targets and cancel descendants after their group leader exits;
+- validate an independently installed tarball, compile the packaged example, and smoke the actual
+  SDK/CLI through files, commands, SSE, recreation, fencing, and graceful resource cleanup;
+- expand credential-shaped detection without printing matching values, including historical hits;
+- make public-content scanning self-contained in Node.js and fail closed on scan/history errors,
+  including CI environments without ripgrep;
+- isolate all test-created filesystem fixtures in unique temporary directories;
+- align reference Provider and OpenAPI versions with the package and include a release acceptance map;
 - allow generation-fenced termination during ambiguous pause/resume transitions;
 - bound every conformance Provider call, validate timeout options, and verify cleanup state;
 - use unique conformance create-intent keys and reject unsuccessful recovery before data-plane probes;

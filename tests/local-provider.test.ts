@@ -1,4 +1,5 @@
-import { access, mkdir, readdir, rm, symlink } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readdir, rm, symlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -11,8 +12,9 @@ const providers: LocalSandboxProvider[] = []
 const roots: string[] = []
 const context = { requestId: 'local-test' }
 
-const makeProvider = (): LocalSandboxProvider => {
-  const result = new LocalSandboxProvider({ defaultTimeoutSeconds: 1 })
+const makeProvider = (defaultTimeoutSeconds = 5): LocalSandboxProvider => {
+  // Successful commands need startup headroom under coverage; deadline tests set their own limit.
+  const result = new LocalSandboxProvider({ defaultTimeoutSeconds })
   providers.push(result)
   return result
 }
@@ -35,9 +37,22 @@ describe('LocalSandboxProvider', () => {
       },
       context,
     )
-    expect(result.exitCode).toBe(0)
+    expect(result).toMatchObject({ exitCode: 0, timedOut: false, cancelled: false })
     expect(result.stdout.endsWith('|ok')).toBe(true)
     expect(result.timedOut).toBe(false)
+  })
+
+  it('applies the configured default command deadline without a request override', async () => {
+    const runtime = new InMemorySandboxRuntime(makeProvider(0.02), {
+      idFactory: () => 'sandbox-1',
+    })
+    await runtime.create({ clientRequestId: 'create-1' }, context)
+    const result = await runtime.execute(
+      'sandbox-1',
+      { expectedGeneration: 1, argv: [process.execPath, '-e', 'setTimeout(()=>{}, 10000)'] },
+      context,
+    )
+    expect(result).toMatchObject({ exitCode: null, timedOut: true, cancelled: false })
   })
 
   it('captures stderr, bounds output, and terminates timed-out commands', async () => {
@@ -90,9 +105,9 @@ describe('LocalSandboxProvider', () => {
   it('allows lifecycle termination to cancel a running command and its descendants', async () => {
     const runtime = new InMemorySandboxRuntime(makeProvider(), { idFactory: () => 'sandbox-1' })
     await runtime.create({ clientRequestId: 'create-1' }, context)
-    const marker = join(process.cwd(), '.test-descendant-marker')
-    await rm(marker, { force: true })
-    roots.push(marker)
+    const markerRoot = await mkdtemp(join(tmpdir(), 'sandbox-descendant-test-'))
+    roots.push(markerRoot)
+    const marker = join(markerRoot, 'probe.txt')
     const script = [
       'const {spawn}=require("node:child_process")',
       `spawn(process.execPath,["-e",${JSON.stringify(`setTimeout(()=>require("node:fs").writeFileSync(${JSON.stringify(marker)},"bad"),300)`)}],{stdio:"ignore"})`,
@@ -149,9 +164,8 @@ describe('LocalSandboxProvider', () => {
   })
 
   it('rejects symlink escape and invalid base64', async () => {
-    const root = join(process.cwd(), '.test-local-provider')
+    const root = await mkdtemp(join(tmpdir(), 'sandbox-file-test-'))
     roots.push(root)
-    await rm(root, { recursive: true, force: true })
     const local = new LocalSandboxProvider({ rootDirectory: root })
     providers.push(local)
     const runtime = new InMemorySandboxRuntime(local, { idFactory: () => 'sandbox-1' })

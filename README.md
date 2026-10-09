@@ -51,7 +51,7 @@ portable sandbox semantics.
 
 ## v0.1 Features
 
-Version `0.1.0` contains:
+Version `0.1.1` builds on the original `0.1.0` baseline and contains:
 
 - a normative runtime model, protocol, capability vocabulary, and OpenAPI document;
 - capability preflight;
@@ -78,6 +78,9 @@ pnpm build
 
 Continue with the [Quickstart](docs/quickstart.md) or open the
 [documentation index](DOCS-INDEX.md).
+
+For a prebuilt, independently installable SDK/CLI archive, use the
+[GitHub release guide](docs/delivery.md). npm registry publication is not enabled.
 
 ## Repository Map
 

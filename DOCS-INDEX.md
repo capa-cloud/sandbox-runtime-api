@@ -4,14 +4,14 @@ authority: canonical
 status: canonical
 title: Sandbox Runtime API documentation index
 genre: spec
-last_verified: 2026-09-03
+last_verified: 2026-10-09
 ---
 
 # Documentation Index
 
 ## Active context
 
-The `v0.1` MVP is the current public baseline. It owns portable lifecycle, capability negotiation,
+The `v0.1.1` delivery implements the `0.1` contract. It owns portable lifecycle, capability negotiation,
 command and file operations, event replay, the TypeScript SDK, the loopback-only reference server,
 the unsafe Local Provider, and provider conformance.
 
@@ -35,6 +35,7 @@ network policy enforcement, snapshots, PTY, and port forwarding remain outside t
 - [API and SDK guide](docs/api-and-sdk.md)
 - [Local Provider](docs/providers/local.md)
 - [Testing and conformance](docs/testing.md)
+- [Release archive and acceptance map](docs/delivery.md)
 - [Clean-room policy](docs/clean-room-policy.md)
 - [Visual source and validation register](docs/visuals/README.md)
 
