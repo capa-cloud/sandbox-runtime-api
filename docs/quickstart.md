@@ -4,7 +4,7 @@ authority: reference
 status: active
 title: Local quickstart
 genre: how-to
-last_verified: 2026-09-02
+last_verified: 2026-10-09
 ---
 
 # Local Quickstart
@@ -13,6 +13,9 @@ last_verified: 2026-09-02
 > it does not isolate untrusted code.
 
 ## Install and verify
+
+This section builds from a Git checkout. For an independently installable prebuilt archive, see
+[Release delivery](delivery.md).
 
 ```bash
 pnpm install
@@ -28,6 +31,9 @@ node dist/cli.js serve --host 127.0.0.1 --port 4311
 
 The server prints its base URL and binds to loopback by default. It has no authentication and refuses
 a non-loopback address unless the embedding application explicitly enables the unsafe override.
+Requests must use a loopback authority with the listening port. Browser metadata must identify the
+same origin; JSON body endpoints reject simple form/text media types. These checks do not authenticate
+local processes or make the Local Provider safe for untrusted code.
 
 ## Create and use a sandbox
 

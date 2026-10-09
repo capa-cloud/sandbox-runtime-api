@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Sandbox Runtime API
-  version: 0.1.0
+  version: 0.1.1
   description: Provider-neutral lifecycle and data-plane contract for isolated execution environments.
 servers:
   - url: http://127.0.0.1:4311
@@ -11,6 +11,7 @@ paths:
     get:
       operationId: getHealth
       responses:
+        "400": { $ref: "#/components/responses/InvalidRequest" }
         "200":
           description: Process is accepting requests
           content:
@@ -24,6 +25,7 @@ paths:
     get:
       operationId: getRuntimeInfo
       responses:
+        "400": { $ref: "#/components/responses/InvalidRequest" }
         "200":
           description: Protocol and Provider manifest
           content:
@@ -35,6 +37,7 @@ paths:
     get:
       operationId: listSandboxes
       responses:
+        "400": { $ref: "#/components/responses/InvalidRequest" }
         "200":
           description: Current in-memory resources
           content:
@@ -70,6 +73,7 @@ paths:
     get:
       operationId: getSandbox
       responses:
+        "400": { $ref: "#/components/responses/InvalidRequest" }
         "200":
           description: Sandbox resource
           content:
@@ -277,6 +281,7 @@ paths:
         - $ref: "#/components/parameters/AfterCursor"
         - $ref: "#/components/parameters/OptionalSandboxId"
       responses:
+        "400": { $ref: "#/components/responses/InvalidRequest" }
         "200":
           description: Events after the cursor
           content:
@@ -296,6 +301,7 @@ paths:
         - $ref: "#/components/parameters/AfterCursor"
         - $ref: "#/components/parameters/OptionalSandboxId"
       responses:
+        "400": { $ref: "#/components/responses/InvalidRequest" }
         "200":
           description: Server-Sent Events stream
           content:

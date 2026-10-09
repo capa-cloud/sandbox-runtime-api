@@ -23,8 +23,11 @@ pnpm audit:dependencies
 
 `pnpm check` runs formatting, lint, type checking, the complete test suite, documentation validation,
 build, coverage thresholds, and actual tarball validation. The package gate checks exports, CLI,
-documentation, and every packaged Markdown local link, including image assets. CI runs the same gates
-on Node.js 22 and 24. The final check gate audits all dependencies, including development tooling,
+documentation, and every packaged Markdown local link, including image assets.
+The package gate also performs an isolated install, compiles the packaged Mock example, and runs the
+actual SDK/CLI through command, files, SSE, recreation, fencing, and shutdown cleanup.
+CI runs the same gates on Node.js 22 and 24. The final check gate audits all dependencies, including
+development tooling,
 against high-severity advisories and requires registry access. CI then runs the public-content scan
 and a separate production dependency audit.
 

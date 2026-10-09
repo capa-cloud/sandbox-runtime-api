@@ -4,7 +4,7 @@ authority: reference
 status: active
 title: Local Provider boundary
 genre: primer
-last_verified: 2026-09-03
+last_verified: 2026-10-09
 ---
 
 # Local Provider
@@ -49,7 +49,12 @@ File operations reject:
 - lexical `..` escape;
 - existing paths whose real path escapes the sandbox directory;
 - symbolic-link entries and symbolic-link write targets;
+- FIFOs, sockets, devices, and other non-regular write/list targets;
 - files above the configured byte limit;
 - malformed base64 input.
 
 These controls protect the file API contract. They do not constrain a spawned command.
+
+Writes verify the opened descriptor is a regular file before truncating. Process-group cancellation
+also applies when the group leader has exited but ordinary descendants still hold output streams.
+These are development reliability controls, not kernel isolation or an adversarial process supervisor.

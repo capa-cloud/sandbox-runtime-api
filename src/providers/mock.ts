@@ -39,7 +39,7 @@ export class MockSandboxProvider implements SandboxProvider {
   constructor(capabilities: Partial<RuntimeCapabilities> = {}) {
     this.#manifest = {
       name: 'mock',
-      version: '0.1.0-dev',
+      version: '0.1.1',
       runtimeClass: 'mock-process',
       capabilities: allCapabilities(capabilities),
     }

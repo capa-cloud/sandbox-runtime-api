@@ -28,6 +28,42 @@ const statusByCode: Readonly<Record<RuntimeErrorCode, number>> = {
 const isLoopback = (host: string): boolean =>
   host === '127.0.0.1' || host === '::1' || host === 'localhost'
 
+const assertRequestBoundary = (request: IncomingMessage, allowUnsafeNetwork: boolean): void => {
+  let authority: URL
+  try {
+    if (!request.headers.host) throw new Error('missing authority')
+    authority = new URL(`http://${request.headers.host}`)
+  } catch {
+    throw new RuntimeError('invalid_request', 'request authority is invalid')
+  }
+  if (
+    authority.username ||
+    authority.password ||
+    authority.pathname !== '/' ||
+    authority.search ||
+    authority.hash ||
+    Number(authority.port || 80) !== request.socket.localPort ||
+    (!allowUnsafeNetwork && !['localhost', '127.0.0.1', '[::1]'].includes(authority.hostname))
+  ) {
+    throw new RuntimeError('invalid_request', 'request authority is not allowed')
+  }
+  let origin = request.headers.origin
+  if (origin === undefined && request.headers.referer !== undefined) {
+    try {
+      origin = new URL(request.headers.referer).origin
+    } catch {
+      throw new RuntimeError('invalid_request', 'request referrer is invalid')
+    }
+  }
+  const fetchSite = request.headers['sec-fetch-site']
+  if (
+    (origin !== undefined && origin !== authority.origin) ||
+    (fetchSite !== undefined && !['same-origin', 'none'].includes(String(fetchSite)))
+  ) {
+    throw new RuntimeError('invalid_request', 'cross-origin browser requests are not allowed')
+  }
+}
+
 const json = (response: ServerResponse, status: number, value: unknown): void => {
   const body = JSON.stringify(value)
   response.writeHead(status, {
@@ -39,6 +75,9 @@ const json = (response: ServerResponse, status: number, value: unknown): void =>
 }
 
 const readJson = async (request: IncomingMessage, bodyLimitBytes: number): Promise<unknown> => {
+  if (request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() !== 'application/json') {
+    throw new RuntimeError('invalid_request', 'request body requires application/json')
+  }
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of request) {
@@ -89,19 +128,25 @@ export const startSandboxRuntimeServer = async (
   }
 
   const server = createServer((request, response) => {
-    void handleRequest(runtime, request, response, maxBodyBytes).catch((error: unknown) => {
-      if (response.headersSent) {
-        response.end()
-        return
-      }
-      if (error instanceof RuntimeError) {
-        json(response, statusByCode[error.code], {
-          error: { code: error.code, message: error.message },
-        })
-        return
-      }
-      json(response, 500, { error: { code: 'internal_error', message: 'internal server error' } })
-    })
+    response.setHeader('x-content-type-options', 'nosniff')
+    void Promise.resolve()
+      .then(() => {
+        assertRequestBoundary(request, options.allowUnsafeNetwork ?? false)
+        return handleRequest(runtime, request, response, maxBodyBytes)
+      })
+      .catch((error: unknown) => {
+        if (response.headersSent) {
+          response.end()
+          return
+        }
+        if (error instanceof RuntimeError) {
+          json(response, statusByCode[error.code], {
+            error: { code: error.code, message: error.message },
+          })
+          return
+        }
+        json(response, 500, { error: { code: 'internal_error', message: 'internal server error' } })
+      })
   })
 
   await new Promise<void>((resolveListen, reject) => {
@@ -128,9 +173,20 @@ const handleRequest = async (
   response: ServerResponse,
   maxBodyBytes: number,
 ): Promise<void> => {
-  const url = new URL(request.url ?? '/', 'http://runtime.invalid')
+  let url: URL
+  let segments: string[]
+  try {
+    if (!request.url?.startsWith('/') || request.url.startsWith('//'))
+      throw new Error('invalid target')
+    url = new URL(request.url, 'http://runtime.invalid')
+    segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent)
+  } catch {
+    throw new RuntimeError('invalid_request', 'request path is invalid')
+  }
+  if (url.pathname.includes('//') || (url.pathname.length > 1 && url.pathname.endsWith('/'))) {
+    throw new RuntimeError('not_found', 'route does not exist')
+  }
   const method = request.method ?? 'GET'
-  const segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent)
   const requestIdHeader = request.headers['x-request-id']
   const abortController = new AbortController()
   response.once('close', () => {
@@ -198,7 +254,7 @@ const handleRequest = async (
     json(response, 200, runtime.get(sandboxId))
     return
   }
-  if (segments[3] === 'actions' && segments[4] && method === 'POST') {
+  if (segments[3] === 'actions' && segments[4] && segments.length === 5 && method === 'POST') {
     const body = await readJson(request, maxBodyBytes)
     if (segments[4] === 'reconcile') {
       json(response, 200, await runtime.reconcile(sandboxId, context))
@@ -249,7 +305,7 @@ const handleRequest = async (
     )
     return
   }
-  if (segments[3] === 'files' && segments[4] === 'content') {
+  if (segments[3] === 'files' && segments[4] === 'content' && segments.length === 5) {
     if (method === 'GET') {
       const expectedGeneration = parseExpectedGeneration({
         expectedGeneration: Number(url.searchParams.get('expectedGeneration') ?? ''),
@@ -279,7 +335,12 @@ const handleRequest = async (
       return
     }
   }
-  if (segments[3] === 'files' && segments[4] === 'entries' && method === 'GET') {
+  if (
+    segments[3] === 'files' &&
+    segments[4] === 'entries' &&
+    segments.length === 5 &&
+    method === 'GET'
+  ) {
     const expectedGeneration = parseExpectedGeneration({
       expectedGeneration: Number(url.searchParams.get('expectedGeneration') ?? ''),
     })

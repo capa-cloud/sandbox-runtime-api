@@ -1,4 +1,5 @@
-import { access, rm } from 'node:fs/promises'
+import { access, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -177,9 +178,9 @@ describe('HTTP server and TypeScript SDK', () => {
   it('propagates an HTTP disconnect to the running local process group', async () => {
     const { client } = await start()
     const sandbox = await client.create({ clientRequestId: 'abort-create' })
-    const marker = join(process.cwd(), '.test-http-abort-marker')
-    cleanupPaths.push(marker)
-    await rm(marker, { force: true })
+    const markerRoot = await mkdtemp(join(tmpdir(), 'sandbox-http-abort-'))
+    cleanupPaths.push(markerRoot)
+    const marker = join(markerRoot, 'probe.txt')
     const script = [
       'const {spawn}=require("node:child_process")',
       `spawn(process.execPath,["-e",${JSON.stringify(`setTimeout(()=>require("node:fs").writeFileSync(${JSON.stringify(marker)},"bad"),300)`)}],{stdio:"ignore"})`,
@@ -208,10 +209,10 @@ describe('HTTP server and TypeScript SDK', () => {
     ).resolves.toMatchObject({ stdout: 'alive', exitCode: 0 })
   })
 
-  it('does not expose unknown error details', async () => {
+  it('does not expose parser details for malformed paths', async () => {
     const { handle } = await start()
     const response = await fetch(`${handle.baseUrl}/v1/sandboxes/%E0%A4%A`)
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(400)
     expect(await response.text()).not.toContain('URIError')
   })
 

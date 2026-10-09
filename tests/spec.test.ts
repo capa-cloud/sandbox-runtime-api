@@ -1,13 +1,20 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { capabilityNames, protocolVersion, sandboxEventTypes, sandboxStates } from '../src/index.js'
+import {
+  capabilityNames,
+  LocalSandboxProvider,
+  MockSandboxProvider,
+  protocolVersion,
+  sandboxEventTypes,
+  sandboxStates,
+} from '../src/index.js'
 
 describe('OpenAPI projection', () => {
   it('matches the executable protocol vocabularies', async () => {
     const document = parse(await readFile('spec/openapi.yaml', 'utf8'))
     expect(document.openapi).toBe('3.1.0')
-    expect(document.info.version).toBe('0.1.0')
+    expect(document.info.version).toBe(JSON.parse(await readFile('package.json', 'utf8')).version)
     expect(document.components.schemas.RuntimeInfo.properties.protocolVersion.const).toBe(
       protocolVersion,
     )
@@ -51,5 +58,36 @@ describe('OpenAPI projection', () => {
         '/v1/sandboxes/{sandboxId}/files/entries',
       ].sort(),
     )
+  })
+
+  it('documents boundary validation on every HTTP operation', async () => {
+    const document = parse(await readFile('spec/openapi.yaml', 'utf8'))
+    for (const path of Object.values(document.paths) as Record<
+      string,
+      { responses?: Record<string, unknown> }
+    >[]) {
+      for (const [method, operation] of Object.entries(path)) {
+        if (['get', 'post', 'put'].includes(method)) {
+          expect(operation.responses?.['400']).toEqual({
+            $ref: '#/components/responses/InvalidRequest',
+          })
+        }
+      }
+    }
+  })
+
+  it('aligns package and reference Provider versions while retaining the publication guard', async () => {
+    const pkg = JSON.parse(await readFile('package.json', 'utf8'))
+    const provider = new LocalSandboxProvider()
+    try {
+      for (const implementation of [provider, new MockSandboxProvider()]) {
+        expect((await implementation.describe({ requestId: 'version-probe' })).version).toBe(
+          pkg.version,
+        )
+      }
+      expect(pkg.private).toBe(true)
+    } finally {
+      await provider.dispose()
+    }
   })
 })

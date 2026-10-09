@@ -39,7 +39,7 @@ Harness 执行；Sandbox Runtime API 规范 Harness 或工具运行所需的隔�
 
 ## v0.1 能力
 
-`0.1.0` 包含：
+`0.1.1` 在原始 `0.1.0` 基础上包含：
 
 - 规范化 Runtime 模型、协议、能力词表与 OpenAPI；
 - capability preflight；
@@ -64,6 +64,9 @@ pnpm build
 ```
 
 继续阅读 [快速开始](docs/quickstart.md) 或 [文档索引](DOCS-INDEX.md)。
+
+预构建 SDK/CLI 安装包和最终验收标准见 [GitHub 交付指南](docs/delivery.md)。
+当前不向 npm 注册表发布。
 
 ## Clean-room 边界
 

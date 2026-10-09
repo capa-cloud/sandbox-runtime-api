@@ -3,6 +3,7 @@ set -euo pipefail
 
 root="${1:-.}"
 status=0
+credential_pattern='(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._-]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|AKIA[0-9A-Z]{16}|sk-(proj-)?[A-Za-z0-9_-]{20,}|api[_-]?key[^[:alnum:]]{0,4}[:=][[:space:]]*[\x22\x27][^\x22\x27]{12,}[\x22\x27])'
 
 dangerous_files=$(find "$root" \
   -path '*/.git' -prune -o \
@@ -22,7 +23,7 @@ scan() {
   local label="$1"
   local pattern="$2"
   local output
-  output=$(rg -n -i --hidden \
+  output=$(rg -l -i --hidden \
     --glob '!.git/**' --glob '!node_modules/**' --glob '!coverage/**' --glob '!pnpm-lock.yaml' \
     --glob '!scripts/scan-public.sh' \
     "$pattern" "$root" || true)
@@ -33,7 +34,7 @@ scan() {
 }
 
 scan 'credential-shaped content' \
-  '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._-]{16,}|api[_-]?key[[:space:]]*[:=][[:space:]]*["'"'][^"'"']{12,}["'"'])'
+  "$credential_pattern"
 scan 'local absolute path or private-network literal' \
   '(/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$)|(^|[^0-9])(10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})([^0-9]|$))'
 
@@ -50,9 +51,9 @@ fi
 
 if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   history=$(git -C "$root" log --all -p -- . ':!pnpm-lock.yaml' ':!scripts/scan-public.sh' | \
-    rg -n -i '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._-]{16,}|/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$))' || true)
+    rg --count-matches -i "$credential_pattern|/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|https?://[^/[:space:]]+\.(internal|local)(/|[[:space:]]|$)" || true)
   if [[ -n "$history" ]]; then
-    printf 'sensitive-shaped git history content:\n%s\n' "$history"
+    printf 'sensitive-shaped git history content detected: %s matching lines; values withheld\n' "$history"
     status=1
   fi
 fi

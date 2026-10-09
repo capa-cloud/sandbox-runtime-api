@@ -26,7 +26,12 @@ const main = async (): Promise<void> => {
   const rootDirectory = argument('--root')
   const provider = new LocalSandboxProvider(rootDirectory ? { rootDirectory } : {})
   const runtime = new InMemorySandboxRuntime(provider)
-  const handle = await startSandboxRuntimeServer(runtime, { host, port })
+  const handle = await startSandboxRuntimeServer(runtime, { host, port }).catch(
+    async (error: unknown) => {
+      await provider.dispose().catch(() => undefined)
+      throw error
+    },
+  )
   process.stdout.write(`${handle.baseUrl}\n`)
 
   const shutdown = async () => {

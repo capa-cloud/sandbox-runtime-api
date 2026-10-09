@@ -81,7 +81,7 @@ export class LocalSandboxProvider implements SandboxProvider {
   async describe(_context: ProviderContext): Promise<ProviderManifest> {
     return {
       name: 'local',
-      version: '0.1.0',
+      version: '0.1.1',
       runtimeClass: 'local-process-unsafe',
       capabilities: {
         commandExecution: true,
@@ -275,12 +275,16 @@ export class LocalSandboxProvider implements SandboxProvider {
     }
     const handle = await open(
       target,
-      constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW,
+      constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK,
       0o600,
     ).catch(() => {
       throw new RuntimeError('invalid_request', 'write target must be a regular non-symbolic file')
     })
     try {
+      if (!(await handle.stat()).isFile()) {
+        throw new RuntimeError('invalid_request', 'write target must be a regular file')
+      }
+      await handle.truncate(0)
       await handle.writeFile(content)
     } finally {
       await handle.close()
@@ -309,6 +313,9 @@ export class LocalSandboxProvider implements SandboxProvider {
         throw new RuntimeError('invalid_request', 'symbolic links are not portable file entries')
       }
       const entryPath = join(directory, entry.name)
+      if (!entry.isFile() && !entry.isDirectory()) {
+        throw new RuntimeError('invalid_request', 'special files are not portable file entries')
+      }
       const metadata = await stat(entryPath)
       result.push({
         path: path === '.' || path === '' ? entry.name : `${path.replace(/\/$/, '')}/${entry.name}`,
@@ -346,7 +353,7 @@ export class LocalSandboxProvider implements SandboxProvider {
   }
 
   #killProcess(child: ChildProcess): void {
-    if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
+    if (!child.pid) return
     if (process.platform !== 'win32') {
       try {
         process.kill(-child.pid, 'SIGKILL')
@@ -355,7 +362,7 @@ export class LocalSandboxProvider implements SandboxProvider {
         // Fall back to the direct child when the process group has already exited.
       }
     }
-    child.kill('SIGKILL')
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
   }
 
   #resource(key: ProviderSandboxKey): LocalResource {
@@ -400,6 +407,9 @@ export class LocalSandboxProvider implements SandboxProvider {
     const existing = await lstat(candidate).catch(() => undefined)
     if (existing?.isSymbolicLink()) {
       throw new RuntimeError('invalid_request', 'symbolic-link writes are not allowed')
+    }
+    if (existing && !existing.isFile()) {
+      throw new RuntimeError('invalid_request', 'write target must be a regular file')
     }
     return candidate
   }
