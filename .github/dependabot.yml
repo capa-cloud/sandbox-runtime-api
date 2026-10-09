@@ -9,6 +9,7 @@ updates:
         patterns:
           - '@biomejs/*'
           - '@types/*'
+          - '@vitest/*'
           - typescript
           - vitest
     ignore:
