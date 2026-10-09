@@ -31,6 +31,10 @@ development tooling,
 against high-severity advisories and requires registry access. CI then runs the public-content scan
 and a separate production dependency audit.
 
+The public-content scanner uses Node.js built-ins, not an optional `rg`/`strings` installation.
+Unreadable roots or failed Git history scans fail closed. Regression fixtures explicitly remove
+ripgrep from `PATH` and verify that detection still blocks publication without printing values.
+
 ## Test dimensions
 
 | Dimension | Coverage |

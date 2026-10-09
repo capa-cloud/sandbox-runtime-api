@@ -12,6 +12,8 @@ No changes queued.
 - validate an independently installed tarball, compile the packaged example, and smoke the actual
   SDK/CLI through files, commands, SSE, recreation, fencing, and graceful resource cleanup;
 - expand credential-shaped detection without printing matching values, including historical hits;
+- make public-content scanning self-contained in Node.js and fail closed on scan/history errors,
+  including CI environments without ripgrep;
 - isolate all test-created filesystem fixtures in unique temporary directories;
 - align reference Provider and OpenAPI versions with the package and include a release acceptance map;
 - allow generation-fenced termination during ambiguous pause/resume transitions;
