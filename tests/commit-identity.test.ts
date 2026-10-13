@@ -83,6 +83,7 @@ describe('public commit identity gate', () => {
     const result = scan(root, ['--since', base])
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('1 commits')
+    expect(scan(root, ['--', '--since', base]).status).toBe(0)
     expect(scan(root).status).toBe(1)
   })
   it('fails closed for a missing repository or invalid baseline', async () => {

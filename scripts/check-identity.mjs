@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 
-const arguments_ = process.argv.slice(2)
+const suppliedArguments = process.argv.slice(2)
+const arguments_ = suppliedArguments[0] === '--' ? suppliedArguments.slice(1) : suppliedArguments
 const git = (args) =>
   execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 const isPublicEmail = (value) =>
