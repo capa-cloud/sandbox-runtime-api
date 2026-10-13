@@ -4,7 +4,7 @@ authority: canonical
 status: canonical
 title: Sandbox Runtime API documentation index
 genre: spec
-last_verified: 2026-10-09
+last_verified: 2026-10-13
 ---
 
 # Documentation Index
@@ -14,6 +14,9 @@ last_verified: 2026-10-09
 The `v0.1.1` delivery implements the `0.1` contract. It owns portable lifecycle, capability negotiation,
 command and file operations, event replay, the TypeScript SDK, the loopback-only reference server,
 the unsafe Local Provider, and provider conformance.
+
+Post-`v0.1.1` security fixes are tracked under [Unreleased](CHANGELOG.md). The development source's
+Provider data-minimization behavior is not proof that an older release archive contains the fix.
 
 Real cloud providers, production multi-tenancy, strong isolation, durable storage, authentication,
 network policy enforcement, snapshots, PTY, and port forwarding remain outside the completed MVP.
@@ -37,6 +40,7 @@ network policy enforcement, snapshots, PTY, and port forwarding remain outside t
 - [Testing and conformance](docs/testing.md)
 - [Release archive and acceptance map](docs/delivery.md)
 - [Clean-room policy](docs/clean-room-policy.md)
+- [Public safety and commit identity](docs/public-safety.md)
 - [Visual source and validation register](docs/visuals/README.md)
 
 ## Process and release evidence

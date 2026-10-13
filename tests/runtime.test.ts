@@ -684,7 +684,7 @@ describe('provider conformance', () => {
     await expect(runProviderConformance(unreadable)).resolves.toContainEqual({
       name: 'provider manifest is readable',
       passed: false,
-      detail: 'offline',
+      detail: 'provider operation failed',
     })
 
     const incomplete: SandboxProvider = {

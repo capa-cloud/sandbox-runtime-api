@@ -4,7 +4,7 @@ authority: canonical
 status: canonical
 title: Portable protocol semantics
 genre: spec
-last_verified: 2026-09-02
+last_verified: 2026-10-13
 ---
 
 # Portable Protocol Semantics
@@ -24,6 +24,13 @@ The normative HTTP projection uses JSON under `/v1`. Errors use:
 
 The stable machine field is `error.code`. Human-readable messages may improve without a protocol
 version change.
+
+The reference runtime uses fixed public messages for Provider exceptions and stored failure
+observations. Only portable error codes from the published vocabulary are retained; other Provider
+failure codes map to `provider_unavailable`. Clients must branch on codes, not diagnostic text.
+Raw Provider diagnostics and credentials must not be placed in returned metadata or failure fields.
+Endpoint URLs containing userinfo credentials are rejected. Intentionally returned command output
+and file bytes are not rewritten by this policy.
 
 ## Lifecycle
 
