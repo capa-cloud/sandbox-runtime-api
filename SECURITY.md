@@ -4,7 +4,7 @@ authority: canonical
 status: canonical
 title: Security policy and deployment boundary
 genre: spec
-last_verified: 2026-10-13
+last_verified: 2026-10-14
 ---
 
 # Security Policy
@@ -39,7 +39,7 @@ directly accessed development server.
 
 ## Provider error and metadata boundary
 
-The development source after `v0.1.1` replaces Provider exception details with fixed public messages.
+Version `0.1.2` replaces Provider exception details with fixed public messages.
 Legal portable error codes remain available to callers; arbitrary Provider failure codes normalize to
 `provider_unavailable`. Failure messages stored on resources are also fixed, so later list/get and
 SDK calls do not reveal the original exception. Conformance reports suppress Provider exception

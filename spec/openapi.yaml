@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Sandbox Runtime API
-  version: 0.1.1
+  version: 0.1.2
   description: Provider-neutral lifecycle and data-plane contract for isolated execution environments.
 servers:
   - url: http://127.0.0.1:4311

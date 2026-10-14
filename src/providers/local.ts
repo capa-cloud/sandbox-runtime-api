@@ -81,7 +81,7 @@ export class LocalSandboxProvider implements SandboxProvider {
   async describe(_context: ProviderContext): Promise<ProviderManifest> {
     return {
       name: 'local',
-      version: '0.1.1',
+      version: '0.1.2',
       runtimeClass: 'local-process-unsafe',
       capabilities: {
         commandExecution: true,
