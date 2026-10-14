@@ -13,6 +13,8 @@ No changes queued.
 - add synthetic HTTP/SDK/resource-read regressions and a value-withholding commit-identity gate;
 - verify exact supplied release archives, diagram integrity and Provider redaction in the installed
   distribution, including downloaded release assets;
+- separate descendant fixture startup headroom from its unchanged cancellation deadline, assert
+  the child is alive before cancellation, and clean up owned execution after failed readiness;
 - document the difference between content scans, commit-identity checks, explicit legacy baselines,
   and authorized history remediation. The existing `v0.1.1` archive remains unchanged.
 
