@@ -4,7 +4,7 @@ authority: canonical
 status: canonical
 title: Security policy and deployment boundary
 genre: spec
-last_verified: 2026-10-09
+last_verified: 2026-10-13
 ---
 
 # Security Policy
@@ -36,6 +36,23 @@ still use the server. Do not expose it through a public reverse proxy. The ratio
 [OWASP CSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 on simple content types and complete-origin comparison, plus independent authority validation for a
 directly accessed development server.
+
+## Provider error and metadata boundary
+
+The development source after `v0.1.1` replaces Provider exception details with fixed public messages.
+Legal portable error codes remain available to callers; arbitrary Provider failure codes normalize to
+`provider_unavailable`. Failure messages stored on resources are also fixed, so later list/get and
+SDK calls do not reveal the original exception. Conformance reports suppress Provider exception
+details while retaining runner-generated validation and deadline messages. This fix is not present
+in the original `v0.1.1` archive; see the [changelog](CHANGELOG.md) for release status.
+
+Provider endpoints must not contain URL userinfo credentials. Provider extensions, manifest fields,
+endpoint paths/query parameters, command output, and file bytes are intentionally returned data, not
+automatic secret-redaction surfaces. Providers must publish only approved metadata; do not put secrets
+in extensions or endpoint URLs. Namespacing does not provide redaction. Diagnostics belong in a
+separately authorized, redacted Provider-side channel; the reference runtime does not log raw errors.
+
+See [public-safety guidance](docs/public-safety.md) for content and commit-identity checks.
 
 ## Deployment boundary
 

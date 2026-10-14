@@ -87,7 +87,11 @@ const callBefore = async <T>(
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
-      Promise.resolve().then(() => operation({ requestId, signal: controller.signal })),
+      Promise.resolve()
+        .then(() => operation({ requestId, signal: controller.signal }))
+        .catch(() => {
+          throw new Error('provider operation failed')
+        }),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(() => {
           reject(new Error(timeoutMessage))

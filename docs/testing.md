@@ -4,7 +4,7 @@ authority: reference
 status: active
 title: Testing and provider conformance
 genre: how-to
-last_verified: 2026-10-09
+last_verified: 2026-10-13
 ---
 
 # Testing and Provider Conformance
@@ -36,6 +36,14 @@ Unreadable roots or failed Git history scans fail closed. Regression fixtures ex
 ripgrep from `PATH` and verify that detection still blocks publication without printing values.
 
 ## Test dimensions
+
+Provider data-safety regressions cover ordinary/typed/non-Error exceptions at every runtime entry,
+stored create/recreate/terminate failures, get/list/events and SDK reads, returned observation codes,
+conformance output, endpoint userinfo, and unchanged intentional command output. Commit-identity
+fixtures separately verify author and committer emails, complete candidate ranges, explicit legacy
+baselines, and fail-closed behavior without printing matched values. Before pushing and after merging,
+run the [identity gate](public-safety.md) against the exact candidate range; ordinary content scanning
+is not an identity audit.
 
 | Dimension | Coverage |
 | --- | --- |

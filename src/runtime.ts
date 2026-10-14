@@ -12,6 +12,8 @@ import {
   capabilityNames,
   type ProviderManifest,
   RuntimeError,
+  runtimeErrorCodes,
+  type RuntimeErrorCode,
   type RuntimeInfo,
   type SandboxEvent,
   type SandboxEventType,
@@ -50,6 +52,10 @@ const canonicalize = (value: unknown): unknown => {
 }
 
 const stableJson = (value: unknown): string => JSON.stringify(canonicalize(value))
+const publicProviderErrorCode = (value: unknown): RuntimeErrorCode =>
+  runtimeErrorCodes.includes(value as RuntimeErrorCode)
+    ? (value as RuntimeErrorCode)
+    : 'provider_unavailable'
 const extensionKeyPattern = /^[a-z][a-z0-9-]*\.[A-Za-z][A-Za-z0-9_.-]*$/
 
 const isJsonValue = (value: unknown, seen = new WeakSet<object>()): value is JsonValue => {
@@ -245,7 +251,7 @@ export class InMemorySandboxRuntime {
       } catch (error) {
         this.#writeObservation(id, {
           state: 'failed',
-          failure: { code: 'provider_unavailable', message: this.#errorMessage(error) },
+          failure: { code: 'provider_unavailable', message: 'provider operation failed' },
         })
         throw this.#providerError('terminate', error)
       }
@@ -359,10 +365,10 @@ export class InMemorySandboxRuntime {
           { sandboxId: id, generation: next.generation, spec },
           context,
         )
-      } catch (error) {
+      } catch {
         return this.#writeObservation(id, {
           state: 'failed',
-          failure: { code: 'provider_unavailable', message: this.#errorMessage(error) },
+          failure: { code: 'provider_unavailable', message: 'provider operation failed' },
         })
       }
       return this.#writeObservation(id, observation)
@@ -396,7 +402,6 @@ export class InMemorySandboxRuntime {
         })
         return result
       } catch (error) {
-        if (error instanceof RuntimeError) throw error
         throw this.#providerError('execute', error)
       }
     })()
@@ -528,10 +533,10 @@ export class InMemorySandboxRuntime {
         { sandboxId: id, generation: requested.generation, spec },
         context,
       )
-    } catch (error) {
+    } catch {
       return this.#writeObservation(id, {
         state: 'failed',
-        failure: { code: 'provider_unavailable', message: this.#errorMessage(error) },
+        failure: { code: 'provider_unavailable', message: 'provider operation failed' },
       })
     }
     return this.#writeObservation(id, observation)
@@ -563,7 +568,11 @@ export class InMemorySandboxRuntime {
     if (observation.endpoint) {
       try {
         const endpoint = new URL(observation.endpoint.baseUrl)
-        if (!['http:', 'https:'].includes(endpoint.protocol))
+        if (
+          !['http:', 'https:'].includes(endpoint.protocol) ||
+          endpoint.username ||
+          endpoint.password
+        )
           throw new Error('unsupported protocol')
       } catch {
         throw new RuntimeError('provider_protocol_error', 'provider endpoint must be an HTTP URL')
@@ -572,7 +581,7 @@ export class InMemorySandboxRuntime {
     if (!transitions[current.state].includes(observation.state)) {
       throw new RuntimeError(
         'provider_protocol_error',
-        `provider attempted invalid transition ${current.state} -> ${observation.state}`,
+        'provider attempted an invalid state transition',
       )
     }
     const endpoint = observation.endpoint ?? current.endpoint
@@ -587,7 +596,14 @@ export class InMemorySandboxRuntime {
       updatedAt: this.#clock().toISOString(),
       ...(observation.state !== 'terminated' && endpoint ? { endpoint } : {}),
       ...(providerExtensions ? { providerExtensions } : {}),
-      ...(observation.failure ? { failure: observation.failure } : {}),
+      ...(observation.failure
+        ? {
+            failure: {
+              code: publicProviderErrorCode(observation.failure.code),
+              message: 'provider operation failed',
+            },
+          }
+        : {}),
     }
     this.#resources.set(id, updated)
     if (current.state !== updated.state) {
@@ -868,15 +884,10 @@ export class InMemorySandboxRuntime {
     }
   }
 
-  #errorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : 'provider failed without an error'
-  }
-
   #providerError(operation: string, error: unknown): RuntimeError {
-    if (error instanceof RuntimeError) return error
     return new RuntimeError(
-      'provider_unavailable',
-      `provider ${operation} failed: ${this.#errorMessage(error)}`,
+      error instanceof RuntimeError ? publicProviderErrorCode(error.code) : 'provider_unavailable',
+      `provider ${operation} failed`,
     )
   }
 

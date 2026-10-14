@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-No changes queued.
+- replace Provider exception details and stored failure messages with fixed public messages, preserve
+  legal portable error codes, and normalize arbitrary failure codes;
+- suppress Provider exception details in conformance reports without losing runner deadline evidence;
+- reject embedded credentials in Provider endpoint URLs;
+- add synthetic HTTP/SDK/resource-read regressions and a value-withholding commit-identity gate;
+- document the difference between content scans, commit-identity checks, explicit legacy baselines,
+  and authorized history remediation. The existing `v0.1.1` archive remains unchanged.
 
 ## 0.1.1 - 2026-10-09
 

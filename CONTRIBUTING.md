@@ -31,3 +31,8 @@ an independent design rationale. Do not include proprietary code, private infras
 credentials, user data, or unpublished behavior.
 
 Contributions are accepted under the Apache License 2.0.
+
+Before pushing and after merging, review [public-safety guidance](docs/public-safety.md) and run the
+commit-identity gate against the declared candidate range. Configure an approved public name and
+GitHub noreply email. For squash merges, pass an explicit approved author email and verify the actual
+merged commit; local Git configuration alone does not control GitHub merge authorship.

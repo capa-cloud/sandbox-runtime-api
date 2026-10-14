@@ -54,6 +54,7 @@
     "build": "tsc -p tsconfig.build.json",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm build && pnpm test:coverage && pnpm pack:check && pnpm audit:dependencies",
     "docs:check": "node scripts/check-docs.mjs",
+    "identity:check": "node scripts/check-identity.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
