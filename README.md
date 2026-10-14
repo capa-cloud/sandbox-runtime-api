@@ -51,7 +51,7 @@ portable sandbox semantics.
 
 ## v0.1 Features
 
-Version `0.1.1` builds on the original `0.1.0` baseline and contains:
+Version `0.1.2` builds on the original `0.1.0` baseline and contains:
 
 - a normative runtime model, protocol, capability vocabulary, and OpenAPI document;
 - capability preflight;

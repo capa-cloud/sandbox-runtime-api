@@ -39,7 +39,7 @@ Harness 执行；Sandbox Runtime API 规范 Harness 或工具运行所需的隔�
 
 ## v0.1 能力
 
-`0.1.1` 在原始 `0.1.0` 基础上包含：
+`0.1.2` 在原始 `0.1.0` 基础上包含：
 
 - 规范化 Runtime 模型、协议、能力词表与 OpenAPI；
 - capability preflight；

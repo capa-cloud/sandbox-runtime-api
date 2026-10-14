@@ -4,7 +4,7 @@ authority: reference
 status: active
 title: Public safety and commit identity
 genre: how-to
-last_verified: 2026-10-13
+last_verified: 2026-10-14
 ---
 
 # Public Safety and Commit Identity
@@ -56,7 +56,7 @@ are not authorized by a generic code-fix request. Never claim all public copies 
 
 ## Runtime data boundary
 
-Provider exceptions and failure observations use fixed messages in the post-`v0.1.1` development
-source; see [SECURITY](../SECURITY.md) for release status and trusted metadata responsibilities.
+Provider exceptions and failure observations use fixed messages from `v0.1.2`;
+see [SECURITY](../SECURITY.md) for release status and trusted metadata responsibilities.
 Intentional command output/file content is not rewritten. Local processes still run with host-user
 permissions. Do not supply real secrets or untrusted code to development fixtures.

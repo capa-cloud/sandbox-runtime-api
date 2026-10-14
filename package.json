@@ -1,6 +1,6 @@
 {
   "name": "sandbox-runtime-api",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "A provider-neutral runtime contract for isolated AI agent execution environments.",
   "license": "Apache-2.0",

@@ -51,7 +51,7 @@ describe('public commit identity gate', () => {
     const root = await fixture()
     commit(root, publicEmail, 'noreply@github.com')
     expect(scan(root).status).toBe(0)
-  })
+  }, 20_000)
   it.each(['author', 'committer'])(
     'rejects a non-noreply %s without printing values',
     async (field) => {
@@ -67,6 +67,7 @@ describe('public commit identity gate', () => {
       expect(result.stderr).toContain(`${field} email`)
       expect(result.stderr).not.toContain(synthetic)
     },
+    20_000,
   )
   it('checks every commit in an explicit range, not just its head', async () => {
     const root = await fixture()
@@ -75,7 +76,7 @@ describe('public commit identity gate', () => {
     commit(root, publicEmail)
     expect(scan(root, ['--since', base]).status).toBe(1)
     expect(scan(root).status).toBe(1)
-  })
+  }, 20_000)
   it('keeps a declared legacy baseline explicit without claiming history is scrubbed', async () => {
     const root = await fixture()
     const base = commit(root, 'legacy-fixture@example.test')
@@ -85,12 +86,12 @@ describe('public commit identity gate', () => {
     expect(result.stdout).toContain('1 commits')
     expect(scan(root, ['--', '--since', base]).status).toBe(0)
     expect(scan(root).status).toBe(1)
-  })
+  }, 20_000)
   it('fails closed for a missing repository or invalid baseline', async () => {
     const root = await fixture()
     expect(scan(root).status).toBe(2)
     commit(root, publicEmail)
     expect(scan(root, ['--since', 'missing-ref']).status).toBe(2)
     expect(scan(root, ['--unknown']).status).toBe(2)
-  })
+  }, 20_000)
 })

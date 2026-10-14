@@ -66,19 +66,20 @@ describe.skipIf(process.platform === 'win32')('Unix Local Provider boundaries', 
     const controller = new AbortController()
     const script = [
       'const {spawn}=require("node:child_process")',
-      'const child=spawn(process.execPath,["-e","setTimeout(()=>{},2000)"],{stdio:"inherit"})',
+      'const child=spawn(process.execPath,["-e","setTimeout(()=>{},10000)"],{stdio:"inherit"})',
       'require("node:fs").writeFileSync("owned-pids.json",JSON.stringify({leader:process.pid,child:child.pid}))',
       'process.exit(0)',
     ].join(';')
     const execution = provider.execute(
       key,
-      { expectedGeneration: 1, argv: [process.execPath, '-e', script], timeoutSeconds: 5 },
+      { expectedGeneration: 1, argv: [process.execPath, '-e', script], timeoutSeconds: 15 },
       { ...context, signal: controller.signal },
     )
     let ownedChild: number | undefined
     let completed = false
     try {
-      const deadline = Date.now() + 1_500
+      // Startup headroom is separate from the unchanged 500ms cancellation assertion.
+      const deadline = Date.now() + 5_000
       let leader: number | undefined
       while (Date.now() < deadline) {
         const content = await provider
@@ -106,6 +107,7 @@ describe.skipIf(process.platform === 'win32')('Unix Local Provider boundaries', 
       expect(leader).toBeDefined()
       expect(ownedChild).toBeDefined()
       expect(() => process.kill(leader as number, 0)).toThrow()
+      expect(() => process.kill(ownedChild as number, 0)).not.toThrow()
       await delay(20)
       controller.abort()
       await expect(bounded(execution, 500)).resolves.toMatchObject({
@@ -114,6 +116,7 @@ describe.skipIf(process.platform === 'win32')('Unix Local Provider boundaries', 
       })
       completed = true
     } finally {
+      controller.abort()
       // Only this fixture's known, still-live child is eligible for cleanup.
       if (!completed && ownedChild) {
         try {
@@ -124,5 +127,5 @@ describe.skipIf(process.platform === 'win32')('Unix Local Provider boundaries', 
       }
       await execution.catch(() => undefined)
     }
-  })
+  }, 20_000)
 })

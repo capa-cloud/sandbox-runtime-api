@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { mkdir, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
-import { SandboxRuntimeClient } from 'sandbox-runtime-api'
+import {
+  InMemorySandboxRuntime,
+  MockSandboxProvider,
+  RuntimeError,
+  SandboxRuntimeClient,
+  startSandboxRuntimeServer,
+} from 'sandbox-runtime-api'
 
 const root = join(process.cwd(), 'cli-resources')
 await mkdir(root)
@@ -132,6 +139,54 @@ try {
 }
 if (failure) throw failure
 assert.deepEqual(await readdir(root), [])
+
+// These checks import the installed distribution, not the source implementation.
+for (const scenario of ['ordinary', 'typed', 'provision']) {
+  const marker = `synthetic-${randomUUID()}`
+  class Probe extends MockSandboxProvider {
+    async provision(request, context) {
+      if (scenario === 'provision') throw new Error(marker)
+      return super.provision(request, context)
+    }
+    async execute() {
+      throw scenario === 'typed' ? new RuntimeError('not_found', marker) : new Error(marker)
+    }
+  }
+  const runtime = new InMemorySandboxRuntime(new Probe(), { idFactory: () => 'package-data-probe' })
+  const handle = await startSandboxRuntimeServer(runtime, { port: 0 })
+  try {
+    const signal = AbortSignal.timeout(5_000)
+    const sdk = new SandboxRuntimeClient(handle.baseUrl)
+    const resource = await sdk.create({ clientRequestId: 'package-data-create' }, signal)
+    if (scenario === 'provision') {
+      assert.deepEqual(resource.failure, {
+        code: 'provider_unavailable',
+        message: 'provider operation failed',
+      })
+    } else {
+      await assert.rejects(
+        sdk.execute(
+          resource.id,
+          { expectedGeneration: resource.generation, argv: ['synthetic-noop'] },
+          signal,
+        ),
+        {
+          code: scenario === 'typed' ? 'not_found' : 'provider_unavailable',
+          message: 'provider execute failed',
+        },
+      )
+    }
+    for (const value of [
+      resource,
+      await sdk.get(resource.id, signal),
+      await sdk.list(signal),
+      await sdk.listEvents(0, resource.id, signal),
+    ])
+      assert.equal(JSON.stringify(value).includes(marker), false)
+  } finally {
+    await handle.close()
+  }
+}
 console.log(
-  'installed package SDK, CLI, lifecycle, files, command, SSE, fencing, and shutdown passed',
+  'installed package SDK, CLI, lifecycle, files, command, SSE, fencing, shutdown, and Provider redaction passed',
 )

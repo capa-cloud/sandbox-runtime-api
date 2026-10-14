@@ -4,16 +4,19 @@ authority: reference
 status: active
 title: Release delivery and acceptance
 genre: primer
-last_verified: 2026-10-09
+last_verified: 2026-10-14
 ---
 
 # Release Delivery and Acceptance
 
 ## Scope
 
-Version `0.1.1` delivers the public `0.1` contract, TypeScript SDK, reference runtime/server/CLI,
+Version `0.1.2` delivers the public `0.1` contract, TypeScript SDK, reference runtime/server/CLI,
 Mock and unsafe Local Providers, conformance runner, documentation, diagrams, and a prebuilt archive.
 This is development infrastructure, not a hosted or production-isolated sandbox service.
+
+Version `0.1.2` includes the Provider diagnostic/failure data-minimization fix; the original `0.1.1`
+archive does not. Existing older tags and assets remain immutable.
 
 The [roadmap](../ROADMAP.md) distinguishes completed work from candidate extensions. A real cloud,
 container, or Kubernetes Provider requires a separate public-source RFC, capability map, isolation
@@ -21,13 +24,13 @@ boundary, and opt-in integration evidence. Those candidates are not unfinished p
 
 ## Install a release archive
 
-Download `sandbox-runtime-api-0.1.1.tgz` and `SHA256SUMS.txt` from the
-[v0.1.1 GitHub release](https://github.com/capa-cloud/sandbox-runtime-api/releases/tag/v0.1.1).
+Download `sandbox-runtime-api-0.1.2.tgz` and `SHA256SUMS.txt` from the
+[v0.1.2 GitHub release](https://github.com/capa-cloud/sandbox-runtime-api/releases/tag/v0.1.2).
 Verify the archive before installing:
 
 ```bash
 shasum -a 256 -c SHA256SUMS.txt
-npm install --ignore-scripts ./sandbox-runtime-api-0.1.1.tgz
+npm install --ignore-scripts ./sandbox-runtime-api-0.1.2.tgz
 npx sandbox-runtime serve --host 127.0.0.1 --port 4311
 ```
 
@@ -88,3 +91,10 @@ directory alone does not establish an active phase.
 
 Coordinate Vitest/coverage upgrades, rerun all gates after substantive changes, and preserve existing
 release tags. Do not lower capability or security assertions just to make tests pass.
+
+From a matching source checkout, `pnpm build` followed by
+`node scripts/check-package.mjs <downloaded-archive.tgz>` validates an exact downloaded archive rather
+than repacking. It checks package identity, safe paths, documentation links, five diagram hashes,
+independent installation/types/example, CLI/SDK/SSE/cleanup, and synthetic Provider exception and
+stored-failure redaction in the installed distribution. A checksum and byte-for-byte publication
+read-back are separate release gates. These checks do not certify isolation or erase old Git metadata.
