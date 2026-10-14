@@ -15,6 +15,7 @@ No changes queued.
   distribution, including downloaded release assets;
 - separate descendant fixture startup headroom from its unchanged cancellation deadline, assert
   the child is alive before cancellation, and clean up owned execution after failed readiness;
+- cap concurrent Vitest workers at two without skipping tests or lowering coverage/cancellation gates;
 - document the difference between content scans, commit-identity checks, explicit legacy baselines,
   and authorized history remediation. The existing `v0.1.1` archive remains unchanged.
 

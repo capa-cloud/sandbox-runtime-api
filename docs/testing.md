@@ -22,6 +22,7 @@ pnpm audit:dependencies
 ```
 
 `pnpm check` runs formatting, lint, type checking, the complete test suite, documentation validation,
+with at most two Vitest workers to bound concurrent CPU and fixture startup pressure,
 build, coverage thresholds, and actual tarball validation. The package gate checks exports, CLI,
 documentation, and every packaged Markdown local link, including image assets.
 The package gate also performs an isolated install, compiles the packaged Mock example, and runs the
